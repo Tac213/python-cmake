@@ -1,0 +1,28 @@
+# install files
+install/
+
+# build files
+build/
+
+# ide files
+.vs
+.idea
+
+# vim files
+*.swp
+*.swo
+
+# Ignore Python source directories
+cpython-*/
+Python-*/
+
+# Ignore Python source archives
+Python-*.tgz
+Python-*.zip
+
+# pyc files
+__pycache__/
+*.pyc
+
+# Misc
+.DS_Store
