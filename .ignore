@@ -1,0 +1,3 @@
+# Enable searching under Python source directories
+!cpython-*/
+!Python-*/
