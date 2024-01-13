@@ -142,13 +142,13 @@ endif()
 message(STATUS "ZLIB_INCLUDE_DIRS=${ZLIB_INCLUDE_DIRS}")
 message(STATUS "ZLIB_LIBRARIES=${ZLIB_LIBRARIES}")
 
-# DB
+# DB5.3
 if(WIN32)
     # Not available on win32
 else()
     # import _dbm
     find_path(DB_INCLUDE_PATH db.h)
-    find_library(DB_LIBRARY NAMES db-4.8 libdb db48)
+    find_library(DB_LIBRARY NAMES db-5.3)
     message(STATUS "DB_INCLUDE_PATH=${DB_INCLUDE_PATH}")
     message(STATUS "DB_LIBRARY=${DB_LIBRARY}")
 endif()
