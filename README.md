@@ -13,7 +13,7 @@ brew install openssl xz zlib libffi
 Arch Linux:
 
 ```bash
-sudo pacman -S bzip2 ncurses expat openssl libffi editline readline sqlite gdbm db5.3 xz tcl tk
+sudo pacman -S bzip2 ncurses expat openssl libffi editline readline sqlite gdbm db5.3 xz tcl tk mpdecimal
 ```
 
 Ubuntu:
