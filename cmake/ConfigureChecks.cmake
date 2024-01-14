@@ -743,7 +743,9 @@ int main () { return RAND_egd (); }
     check_type_size(fpos_t SIZEOF_FPOS_T)
     check_type_size(int SIZEOF_INT)
     check_type_size(long SIZEOF_LONG)
+    check_type_size(long ALIGNOF_LONG)
     check_type_size("long double" SIZEOF_LONG_DOUBLE)
+    check_type_size("long double" ALIGNOF_MAX_ALIGN_T)
     set(HAVE_LONG_DOUBLE ${SIZEOF_LONG_DOUBLE}) # libffi and cpython
     check_type_size("long long" SIZEOF_LONG_LONG)
     set(HAVE_LONG_LONG ${SIZEOF_LONG_LONG})
@@ -752,6 +754,7 @@ int main () { return RAND_egd (); }
     check_type_size(pthread_t SIZEOF_PTHREAD_T)
     check_type_size(short SIZEOF_SHORT)
     check_type_size(size_t SIZEOF_SIZE_T)
+    check_type_size(size_t ALIGNOF_SIZE_T)
     check_type_size(ssize_t HAVE_SSIZE_T)
     check_type_size(time_t SIZEOF_TIME_T)
     check_type_size(uintptr_t SIZEOF_UINTPTR_T)
@@ -776,6 +779,8 @@ int main () { return RAND_egd (); }
         set(WITH_NEXT_FRAMEWORK 0) # TODO: See --enable-framework option.
     endif()
     set(PYTHONFRAMEWORK "")
+
+    set(WITH_FREELISTS 1)
 
     if(HAVE_LONG_LONG)
         if(SIZEOF_OFF_T GREATER SIZEOF_LONG

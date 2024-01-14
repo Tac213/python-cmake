@@ -30,8 +30,11 @@ include(cmake/Extensions.cmake)
 
 option(BUILD_LIBPYTHON_SHARED "Build libpython as a shared library" ON)
 option(BUILD_EXTENSIONS_AS_BUILTIN "Default all modules as builtin to libpython" ON)
+option(INSTALL_DEVELOPMENT "Install files required to develop C extensions" ON)
 
 set(Py_DEBUG OFF)
+set(WITH_DOC_STRINGS 1)
+set(WITH_PYMALLOC 1)
 
 # Detect source directory
 set(_landmark "pyconfig.h.in") # CMake will look for this file.
@@ -167,3 +170,22 @@ endif()
 
 set(EXTRA_PYTHONPATH "" CACHE STRING
     "A colon (:) separated list of extra paths to add to the PYTHONPATH")
+
+# Configure 'pyconfig.h'
+if(UNIX)
+    set(PYCONFIG_BUILD_DIR ${BIN_BUILD_DIR})
+    configure_file(cmake/config-unix/pyconfig.h.in
+                   ${PYCONFIG_BUILD_DIR}/pyconfig.h)
+elseif(WIN32)
+    set(PYCONFIG_BUILD_DIR ${SRC_DIR}/PC) # In a windows build tree, 'pyconfig.h' is NOT required to
+                                          # live along side the python executable.
+                                          # See function '_init_posix()' and '_init_non_posix()'
+                                          # in 'Lib/sysconfig.py'
+endif()
+
+# Install 'pyconfig.h'
+if(INSTALL_DEVELOPMENT)
+    install(FILES ${PYCONFIG_BUILD_DIR}/pyconfig.h
+            DESTINATION ${INCLUDE_INSTALL_DIR}/
+            COMPONENT Development)
+endif()
