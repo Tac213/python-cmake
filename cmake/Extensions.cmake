@@ -28,7 +28,7 @@
 # ALWAYS_BUILTIN: if this is set the module will always be compiled statically into
 #                 libpython.
 # NEVER_BUILTIN: if this is set the module will never be compiled statically into
-#                libpython. If WITH_STATIC_DEPENDENCIES is ON, extension is disabled.
+#                libpython.
 # NO_INSTALL:   do not install or package the extension.
 #
 # Two user-settable options are created for each extension added:
@@ -43,6 +43,8 @@
 # These options convert the extension_name to upper case first and remove any
 # leading underscores.  So add_python_extension(_foo ...) will create the
 # options ENABLE_FOO and BUILTIN_FOO.
+
+include(CMakeDependentOption)
 
 function(add_python_extension name)
     set(options BUILTIN ALWAYS_BUILTIN NEVER_BUILTIN NO_INSTALL)
@@ -66,9 +68,6 @@ function(add_python_extension name)
     set(target_name extension_${pretty_name})
 
     set(enable_default ON)
-    if(ADD_PYTHON_EXTENSION_NEVER_BUILTIN AND WITH_STATIC_DEPENDENCIES)
-        set(enable_default OFF)
-    endif()
 
     # Add options that the user can set to control whether this extension is
     # compiled, and whether it is compiled in to libpython itself.
@@ -81,12 +80,6 @@ function(add_python_extension name)
     else()
         mark_as_advanced(CLEAR ENABLE_${upper_name})
     endif()
-
-   if(ADD_PYTHON_EXTENSION_NEVER_BUILTIN AND WITH_STATIC_DEPENDENCIES AND ENABLE_${upper_name})
-       set(reason " because extension is declared as NEVER_BUILTIN and WITH_STATIC_DEPENDENCIES is ON")
-       set(ENABLE_${upper_name} OFF CACHE BOOL "Forced to OFF${reason}" FORCE)
-       message(STATUS "Setting ENABLE_${upper_name} to OFF${reason}")
-   endif()
 
     # Check all the things we require are found.
     set(missing_deps "")
@@ -148,6 +141,9 @@ function(add_python_extension name)
         set(absolute_src ${source})
         if(NOT IS_ABSOLUTE ${source})
             set(absolute_src ${SRC_DIR}/Modules/${source})
+        endif()
+        if(NOT EXISTS ${absolute_src})
+            message(WARNING "File doesn't exists: ${absolute_src}")
         endif()
         list(APPEND absolute_sources ${absolute_src})
     endforeach()

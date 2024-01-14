@@ -32,6 +32,19 @@ option(BUILD_LIBPYTHON_SHARED "Build libpython as a shared library" ON)
 option(BUILD_EXTENSIONS_AS_BUILTIN "Default all modules as builtin to libpython" ON)
 option(INSTALL_DEVELOPMENT "Install files required to develop C extensions" ON)
 
+# Append an item to a string if it does not already contain it.  Any additional
+# arguments are treated as extra "set" arguments
+macro(append_if_absent VARNAME VALUE)
+    if(NOT ${VARNAME} MATCHES "(^| )${VALUE}($| )")
+        if(${VARNAME})
+            set(${VARNAME} "${${VARNAME}} ${VALUE}" ${ARGN})
+        else()
+            set(${VARNAME} "${VALUE}" ${ARGN})
+        endif()
+    endif()
+endmacro()
+
+
 set(Py_DEBUG OFF)
 set(WITH_DOC_STRINGS 1)
 set(WITH_PYMALLOC 1)
@@ -115,6 +128,19 @@ endif()
 
 # TODO: Apply patches
 
+# Convenience boolean variables to easily test python version
+set(IS_PY3 0)
+set(IS_PY2 1)
+if(PY_VERSION_MAJOR VERSION_GREATER 2)
+    set(IS_PY3 1)
+    set(IS_PY2 0)
+endif()
+
+set(PY3_DLLNAME python3)
+if(Py_DEBUG)
+    set(PY3_DLLNAME ${PY3_DLLNAME}_d)
+endif()
+
 if(WIN32)
     enable_language(CXX)
 endif()
@@ -189,3 +215,63 @@ if(INSTALL_DEVELOPMENT)
             DESTINATION ${INCLUDE_INSTALL_DIR}/
             COMPONENT Development)
 endif()
+
+# Set include directories
+include_directories(${INCLUDE_BUILD_DIR})
+include_directories(${INCLUDE_BUILD_DIR}/internal)
+include_directories(${PYCONFIG_BUILD_DIR})
+include_directories(${SRC_DIR}/Python)
+
+# Set cflags used by all components
+if(CMAKE_C_COMPILER_ID MATCHES GNU)
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.6")
+        append_if_absent(CMAKE_C_FLAGS "-std=c99")
+    endif()
+    append_if_absent(CMAKE_C_FLAGS "-Wall")
+    append_if_absent(CMAKE_C_FLAGS "-Wstrict-prototypes")
+    append_if_absent(CMAKE_C_FLAGS "-fno-strict-aliasing")
+    append_if_absent(CMAKE_C_FLAGS "-fwrapv")
+    append_if_absent(CMAKE_C_FLAGS "-g")
+elseif(CMAKE_C_COMPILER_ID MATCHES Clang)
+    append_if_absent(CMAKE_C_FLAGS "-Wall")
+    append_if_absent(CMAKE_C_FLAGS "-g")
+elseif(CMAKE_C_COMPILER_ID MATCHES Intel)
+    append_if_absent(CMAKE_C_FLAGS "-Wall")
+    append_if_absent(CMAKE_C_FLAGS "-no-ansi-alias")
+elseif(CMAKE_C_COMPILER_ID MATCHES PGI)
+    append_if_absent(CMAKE_C_FLAGS "-alias=traditional")
+endif()
+
+if(MSVC)
+    append_if_absent(CMAKE_C_FLAGS "/Zm200")
+    string(REPLACE "/Ob2" "/Ob1" CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE}) # InlineFunctionExpansion=1
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}" CACHE STRING "Flags used by the compiler during release builds" FORCE)
+endif()
+
+# Useful additional variables that extensions can use.
+if(CMAKE_SYSTEM MATCHES Linux)
+    set(LINUX ON)
+else()
+    set(LINUX OFF)
+endif()
+
+# Clear PythonTargets.cmake
+file(WRITE ${CONFIG_BUILD_DIR}/PythonTargets.cmake "")
+
+# Define python executable wrapper command to ensure
+# python executable resolves the expected python library.
+set(PYTHON_WRAPPER_COMMAND )
+if(BUILD_LIBPYTHON_SHARED AND UNIX)
+    set(_envvar LD_LIBRARY_PATH)
+    if(APPLE)
+        set(_envvar DYLD_LIBRARY_PATH)
+    endif()
+    set(PYTHON_WRAPPER_COMMAND env ${_envvar}=${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR})
+endif()
+
+# Add extension modules
+set(extensions_enabled "" CACHE INTERNAL "" FORCE)
+set(extensions_disabled "" CACHE INTERNAL "" FORCE)
+add_subdirectory(cmake/extensions CMakeBuild/extensions)
+
+show_extension_summary()
