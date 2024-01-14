@@ -94,11 +94,15 @@ message(STATUS "LibFFI_INCLUDE_DIR=${LibFFI_INCLUDE_DIR}")
 message(STATUS "LibFFI_LIBRARY=${LibFFI_LIBRARY}")
 
 # libmpdec
+set(SYSTEM_LIBMPDEC_FOUND OFF)
 if(WIN32)
     # import _decimal
     # include dir: Modules/_decimal/libmpdec
 else()
     find_library(LIBMPDEC_LIBRARY NAMES mpdec libmpdec)
+    if(LIBMPDEC_LIBRARY)
+        set(SYSTEM_LIBMPDEC_FOUND ON)
+    endif()
     set(LIBMPDEC_LIBRARIES ${LIBMPDEC_LIBRARY})
 endif()
 message(STATUS "LIBMPDEC_LIBRARIES=${LIBMPDEC_LIBRARIES}")
@@ -222,7 +226,7 @@ endif()
 # SQLite3
 if(WIN32)
     # import _sqlite3
-    # There is a sqlite3.vcxproj in PCbuild folder, and _sqlite3.pyd depends on liblzma
+    # There is a sqlite3.vcxproj in PCbuild folder, and _sqlite3.pyd depends on sqlite3
     set(SQLite3_INCLUDE_DIRS ${_win32_sqlite_folder})
 else()
     find_package(SQLite3) # https://cmake.org/cmake/help/latest/module/FindSQLite3.html

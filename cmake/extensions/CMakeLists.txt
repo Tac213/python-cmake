@@ -145,7 +145,11 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.7")
     add_python_extension(_abc BUILTIN SOURCES _abc.c)
     add_python_extension(_contextvars ${WIN32_BUILTIN} SOURCES _contextvarsmodule.c)
     add_python_extension(_queue SOURCES _queuemodule.c)
-    add_python_extension(_uuid REQUIRES UUID_LIBRARY "HAVE_UUID_H OR HAVE_UUID_UUID_H" SOURCES _uuidmodule.c LIBRARIES ${UUID_LIBRARY})
+    if(WIN32)
+        add_python_extension(_uuid SOURCES _uuidmodule.c)
+    else()
+        add_python_extension(_uuid REQUIRES UUID_LIBRARY "HAVE_UUID_H OR HAVE_UUID_UUID_H" SOURCES _uuidmodule.c LIBRARIES ${UUID_LIBRARY})
+    endif()
     add_python_extension(_xxtestfuzz SOURCES _xxtestfuzz/_xxtestfuzz.c
                                              _xxtestfuzz/fuzzer.c
     )
@@ -213,6 +217,539 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
         list(APPEND _posixshmem_LIBRARIES rt)
     endif()
     add_python_extension(_posixshmem REQUIRES UNIX SOURCES _multiprocessing/posixshmem.c LIBRARIES ${_posixshmem_LIBRARIES} INCLUDEDIRS ${SRC_DIR}/Modules/_multiprocessing)
+endif()
+
+# Windows-only extensions
+add_python_extension(_msi
+    REQUIRES WIN32
+    SOURCES ${SRC_DIR}/PC/_msi.c
+    LIBRARIES cabinet.lib msi.lib rpcrt4.lib
+)
+add_python_extension(msvcrt REQUIRES MSVC BUILTIN SOURCES ${SRC_DIR}/PC/msvcrtmodule.c)
+add_python_extension(nt REQUIRES WIN32 ALWAYS_BUILTIN SOURCES posixmodule.c)
+
+add_python_extension(winreg REQUIRES WIN32 BUILTIN SOURCES ${SRC_DIR}/PC/winreg.c)
+
+# Python3: Windows-only extensions
+add_python_extension(_overlapped
+    REQUIRES WIN32 IS_PY3
+    SOURCES ${SRC_DIR}/Modules/overlapped.c
+    LIBRARIES ws2_32 $<$<VERSION_GREATER_EQUAL:${PY_VERSION},3.9>:pathcch>
+)
+add_python_extension(_winapi REQUIRES WIN32 IS_PY3 BUILTIN SOURCES ${SRC_DIR}/Modules/_winapi.c)
+
+set(HAS_DISTUTILS_FINDVS_MODULE_SRC 0)
+set(module_src ${SRC_DIR}/PC/_findvs.cpp)
+if(EXISTS ${module_src})
+  set(HAS_DISTUTILS_FINDVS_MODULE_SRC 1)
+endif()
+add_python_extension(_distutils_findvs REQUIRES WIN32 IS_PY3 HAS_DISTUTILS_FINDVS_MODULE_SRC SOURCES ${module_src})
+
+# Multiprocessing is different on unix and windows
+if(UNIX)
+    set(_multiprocessing2_SOURCES
+        _multiprocessing/socket_connection.c
+    )
+    set(_multiprocessing3_SOURCES )
+    if(HAVE_SEM_OPEN AND NOT POSIX_SEMAPHORES_NOT_ENABLED)
+        list(APPEND _multiprocessing${PY_VERSION_MAJOR}_SOURCES
+            _multiprocessing/semaphore.c
+        )
+    endif()
+    set(_multiprocessing_REQUIRES)
+    if(PY_VERSION VERSION_LESS "3.7")
+      list(APPEND _multiprocessing_REQUIRES WITH_THREAD)
+    endif()
+    add_python_extension(_multiprocessing
+        SOURCES _multiprocessing/multiprocessing.c
+                ${_multiprocessing${PY_VERSION_MAJOR}_SOURCES}
+        REQUIRES ${_multiprocessing_REQUIRES}
+        INCLUDEDIRS ${SRC_DIR}/Modules/_multiprocessing
+    )
+elseif(WIN32)
+    set(_multiprocessing2_SOURCES
+        _multiprocessing/pipe_connection.c
+        _multiprocessing/socket_connection.c
+        _multiprocessing/win32_functions.c
+    )
+    set(_multiprocessing3_SOURCES )
+    add_python_extension(_multiprocessing
+        SOURCES _multiprocessing/multiprocessing.c
+                _multiprocessing/semaphore.c
+                ${_multiprocessing${PY_VERSION_MAJOR}_SOURCES}
+        LIBRARIES ws2_32
+    )
+endif()
+
+# Select needs winsock on Windows
+if(WIN32)
+    add_python_extension(select SOURCES selectmodule.c LIBRARIES ws2_32)
+else()
+    add_python_extension(select SOURCES selectmodule.c)
+endif()
+
+# Socket is different on Windows
+set(_socket_SOURCES socketmodule.c)
+if(WIN32)
+    add_python_extension(_socket
+        REQUIRES HAVE_LIBM
+        SOURCES ${_socket_SOURCES}
+        DEFINITIONS EAI_ADDRFAMILY
+                    HAVE_SOCKADDR_STORAGE
+                    HAVE_ADDRINFO
+        LIBRARIES ws2_32 ${M_LIBRARIES} $<$<VERSION_GREATER_EQUAL:${PY_VERSION},3.8>:iphlpapi>
+    )
+else()
+    if(PY_VERSION VERSION_GREATER_EQUAL "2.7.4" AND PY_VERSION VERSION_LESS "3")
+        list(APPEND _socket_SOURCES timemodule.c)
+    endif()
+    add_python_extension(_socket
+        REQUIRES HAVE_LIBM
+        SOURCES ${_socket_SOURCES}
+        LIBRARIES ${M_LIBRARIES}
+    )
+endif()
+
+# _ctypes
+# Common ctypes sources
+set(ctypes_COMMON_SOURCES
+    _ctypes/_ctypes.c
+    _ctypes/callbacks.c
+    _ctypes/callproc.c
+    _ctypes/stgdict.c
+    _ctypes/cfield.c
+)
+if(WIN32)
+    add_python_extension(_ctypes
+        REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
+        SOURCES ${ctypes_COMMON_SOURCES}
+                _ctypes/malloc_closure.c
+        DEFINITIONS Py_BUILD_CORE_MODULE FFI_BUILDING USING_MALLOC_CLOSURE_DOT_C
+        INCLUDEDIRS ${LibFFI_INCLUDE_DIR}
+        LIBRARIES ${LibFFI_LIBRARY}
+    )
+elseif(APPLE)
+    add_python_extension(_ctypes
+        REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
+        SOURCES ${ctypes_COMMON_SOURCES}
+                _ctypes/malloc_closure.c
+        DEFINITIONS Py_BUILD_CORE_MODULE FFI_BUILDING USING_MALLOC_CLOSURE_DOT_C MACOSX
+        INCLUDEDIRS ${LibFFI_INCLUDE_DIR}
+        LIBRARIES ${LibFFI_LIBRARY}
+    )
+else()
+    if(HAVE_LIBDL)
+        add_python_extension(_ctypes
+            REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
+            SOURCES ${ctypes_COMMON_SOURCES}
+            DEFINITIONS Py_BUILD_CORE_MODULE FFI_BUILDING HAVE_FFI_PREP_CIF_VAR HAVE_FFI_PREP_CLOSURE_LOC HAVE_FFI_CLOSURE_ALLOC
+            INCLUDEDIRS ${LibFFI_INCLUDE_DIR}
+            LIBRARIES ${LibFFI_LIBRARY} ${HAVE_LIBDL}
+        )
+    else()
+        add_python_extension(_ctypes
+            REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
+            SOURCES ${ctypes_COMMON_SOURCES}
+            DEFINITIONS Py_BUILD_CORE_MODULE FFI_BUILDING
+            INCLUDEDIRS ${LibFFI_INCLUDE_DIR}
+            LIBRARIES ${LibFFI_LIBRARY}
+        )
+    endif()
+endif()
+
+# _decimal
+set(libmpdec_config_x64          CONFIG_64 ASM)
+set(libmpdec_config_uint128      CONFIG_64 ANSI HAVE_UINT128_T)
+set(libmpdec_config_ansi64       CONFIG_64 ANSI)
+set(libmpdec_config_ppro         CONFIG_32 PPRO ASM)
+set(libmpdec_config_ansi32       CONFIG_32 PPRO) # XXX Is ANSI needed here ?
+set(libmpdec_config_ansi_legacy  CONFIG_32 ANSI LEGACY_COMPILER)
+set(libmpdec_config_universal    UNIVERSAL)
+
+if(SYSTEM_LIBMPDEC_FOUND)
+    set(_decimal_REQUIRES REQUIRES LIBMPDEC_LIBRARIES)
+    set(_decimal_LIBRARIES LIBRARIES ${LIBMPDEC_LIBRARIES})
+    set(_decimal_EXTRA_SOURCES )
+    set(_decimal_INCLUDEDIRS )
+else()
+    set(_decimal_REQUIRES )
+    set(_decimal_EXTRA_SOURCES
+        _decimal/libmpdec/basearith.c
+        _decimal/libmpdec/constants.c
+        _decimal/libmpdec/context.c
+        _decimal/libmpdec/convolute.c
+        _decimal/libmpdec/crt.c
+        _decimal/libmpdec/difradix2.c
+        _decimal/libmpdec/fnt.c
+        _decimal/libmpdec/fourstep.c
+        _decimal/libmpdec/io.c
+        _decimal/libmpdec/mpdecimal.c
+        _decimal/libmpdec/numbertheory.c
+        _decimal/libmpdec/sixstep.c
+        _decimal/libmpdec/transpose.c
+    )
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.9")
+        list(APPEND _decimal_EXTRA_SOURCES
+            _decimal/libmpdec/mpalloc.c
+        )
+    else()
+        list(APPEND _decimal_EXTRA_SOURCES
+            _decimal/libmpdec/memory.c
+        )
+    endif()
+    if(WIN32)
+        if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+            enable_language(ASM_MASM)
+            list(APPEND _decimal_EXTRA_SOURCES
+                _decimal/libmpdec/vcdiv64.asm
+            )
+        endif()
+    endif()
+    set(_decimal_INCLUDEDIRS INCLUDEDIRS ${SRC_DIR}/Modules/_decimal/libmpdec)
+endif()
+
+set(libmpdec_config )
+set(_decimal_compile_flags )
+if(APPLE)
+    # Universal here means: build with the same options Python
+    # was built with.
+    set(libmpdec_config universal)
+elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+    if(HAVE_GCC_ASM_FOR_X64)
+        set(libmpdec_config x64)
+    elseif(HAVE_GCC_UINT128_T)
+        set(libmpdec_config uint128)
+    else()
+        set(libmpdec_config ansi64)
+    endif()
+elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
+    if(HAVE_GCC_ASM_FOR_X87 AND
+        (CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+        AND NOT CMAKE_SYSTEM MATCHES SunOS
+    )
+        # solaris: problems with register allocation.
+        # icc >= 11.0 works as well.
+        set(libmpdec_config ppro)
+        list(APPEND _decimal_compile_flags "-Wno-unknown-pragmas")
+    else()
+      set(libmpdec_config ansi32)
+    endif()
+else()
+    message(FATAL_ERROR "extension_decimal: unsupported architecture")
+endif()
+
+# Workarounds for toolchain bugs:
+if(HAVE_IPA_PURE_CONST_BUG)
+    # Some versions of gcc miscompile inline asm:
+    # http://gcc.gnu.org/bugzilla/show_bug.cgi?id=46491
+    # http://gcc.gnu.org/ml/gcc/2010-11/msg00366.html
+    list(APPEND _decimal_compile_flags "-fno-ipa-pure-const")
+endif()
+if(HAVE_GLIBC_MEMMOVE_BUG)
+    # _FORTIFY_SOURCE wrappers for memmove and bcopy are incorrect:
+    # http://sourceware.org/ml/libc-alpha/2010-12/msg00009.html
+    # XXX Implement missing logic
+#    undef_macros.append('_FORTIFY_SOURCE')
+endif()
+
+if(NOT WITH_THREAD AND PY_VERSION VERSION_LESS "3.7")
+    # Faster version without thread local contexts:
+    list(APPEND libmpdec_config_${libmpdec_config}
+        WITHOUT_THREADS
+    )
+endif()
+
+if(WIN32)
+    list(APPEND libmpdec_config_${libmpdec_config}
+        _CRT_SECURE_NO_WARNINGS MASM
+    )
+endif()
+
+# Uncomment for extra functionality:
+#list(APPEND libmpdec_config_${libmpdec_config} EXTRA_FUNCTIONALITY)
+
+if(ENABLE_DECIMAL)
+    message(STATUS "extension_decimal: libmpdec_config [${libmpdec_config}]")
+endif()
+add_python_extension(_decimal
+    SOURCES
+        _decimal/_decimal.c
+        _decimal/docstrings.h
+        ${_decimal_EXTRA_SOURCES}
+    DEFINITIONS ${libmpdec_config_${libmpdec_config}}
+    ${_decimal_REQUIRES}
+    ${_decimal_LIBRARIES}
+    ${_decimal_INCLUDEDIRS}
+)
+if(_decimal_compile_flags AND ENABLE_DECIMAL AND NOT BUILTIN_DECIMAL)
+    set_target_properties(extension_decimal PROPERTIES COMPILE_FLAGS ${_decimal_compile_flags})
+endif()
+
+# Build expat using the system expat if it's installed, otherwise use the
+# builtin version.
+if(EXPAT_LIBRARIES AND EXPAT_INCLUDE_DIRS)
+    add_python_extension(pyexpat
+        SOURCES pyexpat.c
+        LIBRARIES ${EXPAT_LIBRARIES}
+        INCLUDEDIRS ${EXPAT_INCLUDE_DIRS}
+    )
+    add_python_extension(_elementtree
+        SOURCES _elementtree.c
+        LIBRARIES ${EXPAT_LIBRARIES}
+        INCLUDEDIRS ${EXPAT_INCLUDE_DIRS}
+    )
+else()
+    set(_pyexpat_definitions XML_STATIC)
+    set(_pyexpat_SOURCES
+        pyexpat.c
+        expat/xmlparse.c
+        expat/xmlrole.c
+        expat/xmltok.c
+        )
+    if(UNIX)
+        list(APPEND _pyexpat_definitions HAVE_EXPAT_CONFIG_H)
+        # bpo-30947: Python uses best available entropy sources to
+        # call XML_SetHashSalt(), expat entropy sources are not needed
+        list(APPEND _pyexpat_definitions XML_POOR_ENTROPY)
+    elseif(WIN32)
+        list(APPEND _pyexpat_definitions COMPILED_FROM_DSP)
+        if(EXISTS "${SRC_DIR}/Modules/expat/loadlibrary.c")
+            list(APPEND _pyexpat_SOURCES "${SRC_DIR}/Modules/expat/loadlibrary.c")
+        endif()
+    endif()
+    add_python_extension(pyexpat
+        SOURCES ${_pyexpat_SOURCES}
+        DEFINITIONS ${_pyexpat_definitions}
+        INCLUDEDIRS ${SRC_DIR}/Modules/expat
+    )
+    set(_elementtree_definitions USE_PYEXPAT_CAPI)
+    if(WIN32)
+        list(APPEND _elementtree_definitions COMPILED_FROM_DSP)
+    endif()
+    add_python_extension(_elementtree
+        SOURCES _elementtree.c
+        DEFINITIONS ${_elementtree_definitions}
+        INCLUDEDIRS ${SRC_DIR}/Modules/expat
+    )
+endif()
+
+# We always compile these even when OpenSSL is available (issue #14693).
+# It's harmless and the object code is tiny (40-50 KB per module,
+# only loaded when actually used).
+if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
+    add_python_extension(_md5 ${WIN32_BUILTIN}
+        SOURCES md5module.c _hacl/Hacl_Hash_MD5.c
+        DEFINITIONS _BSD_SOURCE _DEFAULT_SOURCE
+        INCLUDEDIRS ${SRC_DIR}/Modules/_hacl/include
+    )
+    add_python_extension(_sha1 ${WIN32_BUILTIN}
+        SOURCES sha1module.c _hacl/Hacl_Hash_SHA1.c
+        DEFINITIONS _BSD_SOURCE _DEFAULT_SOURCE
+        INCLUDEDIRS ${SRC_DIR}/Modules/_hacl/include
+    )
+else()
+    add_python_extension(_md5 ${WIN32_BUILTIN} SOURCES md5module.c)
+    add_python_extension(_sha1 ${WIN32_BUILTIN} SOURCES sha1module.c)
+    add_python_extension(_sha256 ${WIN32_BUILTIN} SOURCES sha256module.c)
+    add_python_extension(_sha512 ${WIN32_BUILTIN} SOURCES sha512module.c)
+endif()
+
+if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
+    add_python_extension(_sha2 ${WIN32_BUILTIN}
+        SOURCES sha2module.c _hacl/Hacl_Hash_SHA2.c
+        DEFINITIONS _BSD_SOURCE _DEFAULT_SOURCE
+        INCLUDEDIRS ${SRC_DIR}/Modules/_hacl/include
+    )
+endif()
+
+# Extensions that depend on other libraries
+set(binascii_REQUIRES "")
+set(binascii_DEFINITIONS "")
+set(binascii_LIBRARIES "")
+set(binascii_INCLUDEDIRS "")
+if(ZLIB_LIBRARY)
+    list(APPEND binascii_REQUIRES ZLIB_INCLUDE_DIR)
+    list(APPEND binascii_DEFINITIONS USE_ZLIB_CRC32)
+    list(APPEND binascii_LIBRARIES ${ZLIB_LIBRARY})
+    list(APPEND binascii_INCLUDEDIRS ${ZLIB_INCLUDE_DIR})
+endif()
+add_python_extension(binascii
+    REQUIRES ${binascii_REQUIRES}
+    ${WIN32_BUILTIN}
+    SOURCES binascii.c
+    DEFINITIONS ${binascii_DEFINITIONS}
+    LIBRARIES ${binascii_LIBRARIES}
+    INCLUDEDIRS ${binascii_INCLUDEDIRS}
+)
+
+# _bz2
+if(WIN32)
+    add_python_extension(_bz2
+        SOURCES _bz2module.c
+                ${BZIP2_INCLUDE_DIR}/blocksort.c
+                ${BZIP2_INCLUDE_DIR}/bzlib.c
+                ${BZIP2_INCLUDE_DIR}/compress.c
+                ${BZIP2_INCLUDE_DIR}/crctable.c
+                ${BZIP2_INCLUDE_DIR}/decompress.c
+                ${BZIP2_INCLUDE_DIR}/huffman.c
+                ${BZIP2_INCLUDE_DIR}/randtable.c
+                ${BZIP2_INCLUDE_DIR}/bzlib.h
+                ${BZIP2_INCLUDE_DIR}/bzlib_private.h
+        INCLUDEDIRS ${BZIP2_INCLUDE_DIR}
+    )
+else()
+    add_python_extension(_bz2
+        REQUIRES BZIP2_LIBRARIES BZIP2_INCLUDE_DIR
+        SOURCES _bz2module.c
+        LIBRARIES ${BZIP2_LIBRARIES}
+        INCLUDEDIRS ${BZIP2_INCLUDE_DIR}
+    )
+endif()
+
+# _curses
+set(curses_common_REQUIRES CURSES_LIBRARIES)
+set(curses_common_LIBRARIES ${CURSES_LIBRARIES})
+add_python_extension(_curses_panel
+    REQUIRES ${curses_common_REQUIRES} PANEL_LIBRARIES "HAVE_PANEL_H OR HAVE_NCURSES_PANEL_H"
+    SOURCES _curses_panel.c
+    LIBRARIES ${curses_common_LIBRARIES} ${PANEL_LIBRARIES}
+)
+add_python_extension(_curses
+    REQUIRES ${curses_common_REQUIRES}
+    SOURCES _cursesmodule.c
+    LIBRARIES ${curses_common_LIBRARIES}
+)
+
+# _dbm
+add_python_extension(_dbm
+    REQUIRES NDBM_TAG GDBM_LIBRARY GDBM_COMPAT_LIBRARY
+    SOURCES _dbmmodule.c
+    DEFINITIONS HAVE_${NDBM_TAG}_H
+    LIBRARIES ${GDBM_LIBRARY} ${GDBM_COMPAT_LIBRARY}
+    INCLUDEDIRS ${${NDBM_TAG}_INCLUDE_PATH}
+)
+
+# _gdbm
+add_python_extension(_gdbm
+    REQUIRES GDBM_INCLUDE_PATH GDBM_LIBRARY GDBM_COMPAT_LIBRARY
+    SOURCES _gdbmmodule.c
+    DEFINITIONS HAVE_GDBM_DASH_NDBM_H
+    LIBRARIES ${GDBM_LIBRARY}
+    INCLUDEDIRS ${GDBM_INCLUDE_PATH}
+)
+
+# _hashlib
+add_python_extension(_hashlib
+    REQUIRES OPENSSL_INCLUDE_DIR OPENSSL_LIBRARIES
+    SOURCES _hashopenssl.c
+    LIBRARIES ${OPENSSL_LIBRARIES}
+    INCLUDEDIRS ${OPENSSL_INCLUDE_DIR}
+)
+if(ENABLE_HASHLIB AND CMAKE_C_COMPILER_ID MATCHES GNU)
+    set_property(SOURCE ${SRC_DIR}/Modules/_hashopenssl.c PROPERTY COMPILE_FLAGS -Wno-deprecated-declarations)
+endif()
+
+# _lzma
+if(WIN32)
+else()
+    add_python_extension(_lzma
+        REQUIRES LZMA_INCLUDE_PATH LZMA_LIBRARY
+        SOURCES _lzmamodule.c
+        DEFINITIONS MODULE_NAME="lzma" LZMA_API_STATIC=1
+        INCLUDEDIRS ${LZMA_INCLUDE_PATH}
+        LIBRARIES ${LZMA_LIBRARY}
+    )
+endif()
+
+# readline
+add_python_extension(readline
+    REQUIRES READLINE_INCLUDE_PATH READLINE_LIBRARY CURSES_LIBRARIES HAVE_READLINE_READLINE_H
+    SOURCES readline.c
+    LIBRARIES ${READLINE_LIBRARY} ${CURSES_LIBRARIES}
+    INCLUDEDIRS ${READLINE_INCLUDE_PATH}
+)
+
+# _sqlite3
+if(WIN32)
+else()
+    add_python_extension(_sqlite3
+        REQUIRES SQLite3_INCLUDE_DIRS SQLite3_LIBRARIES
+        SOURCES _sqlite/cache.c
+                _sqlite/connection.c
+                _sqlite/cursor.c
+                _sqlite/microprotocols.c
+                _sqlite/module.c
+                _sqlite/prepare_protocol.c
+                _sqlite/row.c
+                _sqlite/statement.c
+                _sqlite/util.c
+        DEFINITIONS MODULE_NAME="sqlite3" SQLITE_OMIT_LOAD_EXTENSION=1
+        INCLUDEDIRS ${SQLite3_INCLUDE_DIRS}
+        LIBRARIES ${SQLite3_LIBRARIES}
+    )
+    if(ENABLE_SQLITE3 AND CMAKE_C_COMPILER_ID MATCHES GNU)
+        set_property(SOURCE ${SRC_DIR}/Modules/_sqlite/module.c PROPERTY COMPILE_FLAGS -Wno-deprecated-declarations)
+    endif()
+endif()
+
+# _ssl
+set(_ssl_LIBRARIES ${OPENSSL_LIBRARIES})
+if(WIN32)
+    list(APPEND _ssl_LIBRARIES Crypt32 ws2_32)
+endif()
+set(_ssl_SOURCES _ssl.c)
+if(WIN32)
+    list(APPEND _ssl_SOURCES ${OPENSSL_INCLUDE_DIR}/applink.c)
+endif()
+add_python_extension(_ssl
+    REQUIRES OPENSSL_INCLUDE_DIR OPENSSL_LIBRARIES
+    SOURCES ${_ssl_SOURCES}
+    LIBRARIES ${_ssl_LIBRARIES}
+    INCLUDEDIRS ${OPENSSL_INCLUDE_DIR}
+)
+
+# _tkinter
+set(_tkinter_REQUIRES TCL_LIBRARY TK_LIBRARY TCL_INCLUDE_PATH TK_INCLUDE_PATH)
+set(_tkinter_LIBRARIES ${TCL_LIBRARY} ${TK_LIBRARY})
+set(_tkinter_INCLUDEDIRS ${TCL_INCLUDE_PATH} ${TK_INCLUDE_PATH})
+if(UNIX)
+    list(APPEND _tkinter_REQUIRES X11_INCLUDE_DIR X11_LIBRARIES)
+    list(APPEND _tkinter_LIBRARIES ${X11_LIBRARIES})
+    list(APPEND _tkinter_INCLUDEDIRS ${X11_INCLUDE_DIR})
+endif()
+add_python_extension(_tkinter
+    REQUIRES ${_tkinter_REQUIRES}
+    SOURCES _tkinter.c tkappinit.c
+    DEFINITIONS WITH_APPINIT=1
+    LIBRARIES ${_tkinter_LIBRARIES}
+    INCLUDEDIRS ${_tkinter_INCLUDEDIRS}
+)
+
+# zlib
+if(WIN32)
+    add_python_extension(zlib BUILTIN
+        SOURCES
+            zlibmodule.c
+            ${ZLIB_INCLUDE_DIRS}/adler32.c
+            ${ZLIB_INCLUDE_DIRS}/compress.c
+            ${ZLIB_INCLUDE_DIRS}/crc32.c
+            ${ZLIB_INCLUDE_DIRS}/deflate.c
+            ${ZLIB_INCLUDE_DIRS}/infback.c
+            ${ZLIB_INCLUDE_DIRS}/inffast.c
+            ${ZLIB_INCLUDE_DIRS}/inflate.c
+            ${ZLIB_INCLUDE_DIRS}/inftrees.c
+            ${ZLIB_INCLUDE_DIRS}/trees.c
+            ${ZLIB_INCLUDE_DIRS}/uncompr.c
+            ${ZLIB_INCLUDE_DIRS}/zutil.c
+        INCLUDEDIRS ${ZLIB_INCLUDE_DIRS}
+    )
+else()
+    add_python_extension(zlib
+        REQUIRES ZLIB_LIBRARIES ZLIB_INCLUDE_DIRS
+        SOURCES zlibmodule.c
+        LIBRARIES ${ZLIB_LIBRARIES}
+        INCLUDEDIRS ${ZLIB_INCLUDE_DIRS}
+    )
 endif()
 
 # FIX ME: test code, print all builtin extension source files
