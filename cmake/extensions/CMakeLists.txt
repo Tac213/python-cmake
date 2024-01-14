@@ -653,11 +653,11 @@ endif()
 if(WIN32)
 else()
     add_python_extension(_lzma
-        REQUIRES LZMA_INCLUDE_PATH LZMA_LIBRARY
+        REQUIRES LIBLZMA_INCLUDE_DIRS LIBLZMA_LIBRARIES
         SOURCES _lzmamodule.c
         DEFINITIONS MODULE_NAME="lzma" LZMA_API_STATIC=1
-        INCLUDEDIRS ${LZMA_INCLUDE_PATH}
-        LIBRARIES ${LZMA_LIBRARY}
+        INCLUDEDIRS ${LIBLZMA_INCLUDE_DIRS}
+        LIBRARIES ${LIBLZMA_LIBRARIES}
     )
 endif()
 
@@ -670,19 +670,26 @@ add_python_extension(readline
 )
 
 # _sqlite3
+set(_sqlite3_SOURCES
+    _sqlite/connection.c
+    _sqlite/cursor.c
+    _sqlite/microprotocols.c
+    _sqlite/module.c
+    _sqlite/prepare_protocol.c
+    _sqlite/row.c
+    _sqlite/statement.c
+    _sqlite/util.c
+)
+if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+    list(APPEND _sqlite3_SOURCES _sqlite/blob.c)
+else()
+    list(APPEND _sqlite3_SOURCES _sqlite/cache.c)
+endif()
 if(WIN32)
 else()
     add_python_extension(_sqlite3
         REQUIRES SQLite3_INCLUDE_DIRS SQLite3_LIBRARIES
-        SOURCES _sqlite/cache.c
-                _sqlite/connection.c
-                _sqlite/cursor.c
-                _sqlite/microprotocols.c
-                _sqlite/module.c
-                _sqlite/prepare_protocol.c
-                _sqlite/row.c
-                _sqlite/statement.c
-                _sqlite/util.c
+        SOURCES ${_sqlite3_SOURCES}
         DEFINITIONS MODULE_NAME="sqlite3" SQLITE_OMIT_LOAD_EXTENSION=1
         INCLUDEDIRS ${SQLite3_INCLUDE_DIRS}
         LIBRARIES ${SQLite3_LIBRARIES}

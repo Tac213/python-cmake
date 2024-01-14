@@ -210,7 +210,7 @@ else()
     find_package(LibLZMA) # https://cmake.org/cmake/help/latest/module/FindLibLZMA.html
 endif()
 message(STATUS "LIBLZMA_INCLUDE_DIRS=${LIBLZMA_INCLUDE_DIRS}")
-message(STATUS "LIBLZMA_INCLUDE_DIRS=${LIBLZMA_LIBRARIES}")
+message(STATUS "LIBLZMA_LIBRARIES=${LIBLZMA_LIBRARIES}")
 
 # readline
 if(WIN32)
