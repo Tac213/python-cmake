@@ -321,12 +321,12 @@ set(ctypes_COMMON_SOURCES
 )
 if(WIN32)
     add_python_extension(_ctypes
-        REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
+        # REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
         SOURCES ${ctypes_COMMON_SOURCES}
                 _ctypes/malloc_closure.c
-        DEFINITIONS Py_BUILD_CORE_MODULE FFI_BUILDING USING_MALLOC_CLOSURE_DOT_C
+        DEFINITIONS USING_MALLOC_CLOSURE_DOT_C
         INCLUDEDIRS ${LibFFI_INCLUDE_DIR}
-        LIBRARIES ${LibFFI_LIBRARY}
+        LIBRARIES libffi
     )
 elseif(APPLE)
     add_python_extension(_ctypes
@@ -399,7 +399,6 @@ else()
     endif()
     if(WIN32)
         if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
-            enable_language(ASM_MASM)
             list(APPEND _decimal_EXTRA_SOURCES
                 _decimal/libmpdec/vcdiv64.asm
             )
@@ -471,16 +470,16 @@ endif()
 if(ENABLE_DECIMAL)
     message(STATUS "extension_decimal: libmpdec_config [${libmpdec_config}]")
 endif()
-add_python_extension(_decimal
-    SOURCES
-        _decimal/_decimal.c
-        _decimal/docstrings.h
-        ${_decimal_EXTRA_SOURCES}
-    DEFINITIONS ${libmpdec_config_${libmpdec_config}}
-    ${_decimal_REQUIRES}
-    ${_decimal_LIBRARIES}
-    ${_decimal_INCLUDEDIRS}
-)
+# add_python_extension(_decimal
+#     SOURCES
+#         _decimal/_decimal.c
+#         _decimal/docstrings.h
+#         ${_decimal_EXTRA_SOURCES}
+#     DEFINITIONS ${libmpdec_config_${libmpdec_config}}
+#     ${_decimal_REQUIRES}
+#     ${_decimal_LIBRARIES}
+#     ${_decimal_INCLUDEDIRS}
+# )
 if(_decimal_compile_flags AND ENABLE_DECIMAL AND NOT BUILTIN_DECIMAL)
     set_target_properties(extension_decimal PROPERTIES COMPILE_FLAGS ${_decimal_compile_flags})
 endif()
@@ -639,18 +638,33 @@ add_python_extension(_gdbm
 )
 
 # _hashlib
-add_python_extension(_hashlib
-    REQUIRES OPENSSL_INCLUDE_DIR OPENSSL_LIBRARIES
-    SOURCES _hashopenssl.c
-    LIBRARIES ${OPENSSL_LIBRARIES}
-    INCLUDEDIRS ${OPENSSL_INCLUDE_DIR}
-)
+if(WIN32)
+    add_python_extension(_hashlib
+        REQUIRES OPENSSL_INCLUDE_DIR OPENSSL_LIBRARIES
+        SOURCES _hashopenssl.c
+        LIBRARIES OpenSSL::Crypto OpenSSL::SSL
+        INCLUDEDIRS ${OPENSSL_INCLUDE_DIR}
+    )
+else()
+    add_python_extension(_hashlib
+        REQUIRES OPENSSL_INCLUDE_DIR OPENSSL_LIBRARIES
+        SOURCES _hashopenssl.c
+        LIBRARIES ${OPENSSL_LIBRARIES}
+        INCLUDEDIRS ${OPENSSL_INCLUDE_DIR}
+    )
+endif()
 if(ENABLE_HASHLIB AND CMAKE_C_COMPILER_ID MATCHES GNU)
     set_property(SOURCE ${SRC_DIR}/Modules/_hashopenssl.c PROPERTY COMPILE_FLAGS -Wno-deprecated-declarations)
 endif()
 
 # _lzma
 if(WIN32)
+    add_python_extension(_lzma
+        SOURCES _lzmamodule.c
+        DEFINITIONS MODULE_NAME="lzma" LZMA_API_STATIC=1
+        INCLUDEDIRS ${LIBLZMA_INCLUDE_DIRS}
+        LIBRARIES liblzma::liblzma
+    )
 else()
     add_python_extension(_lzma
         REQUIRES LIBLZMA_INCLUDE_DIRS LIBLZMA_LIBRARIES
@@ -686,6 +700,12 @@ else()
     list(APPEND _sqlite3_SOURCES _sqlite/cache.c)
 endif()
 if(WIN32)
+    add_python_extension(_sqlite3
+        SOURCES ${_sqlite3_SOURCES}
+        DEFINITIONS MODULE_NAME="sqlite3" SQLITE_OMIT_LOAD_EXTENSION=1
+        INCLUDEDIRS ${SQLite3_INCLUDE_DIRS}
+        LIBRARIES sqlite3::sqlite3
+    )
 else()
     add_python_extension(_sqlite3
         REQUIRES SQLite3_INCLUDE_DIRS SQLite3_LIBRARIES
@@ -702,7 +722,7 @@ endif()
 # _ssl
 set(_ssl_LIBRARIES ${OPENSSL_LIBRARIES})
 if(WIN32)
-    list(APPEND _ssl_LIBRARIES Crypt32 ws2_32)
+    set(_ssl_LIBRARIES ws2_32 Crypt32 OpenSSL::Crypto OpenSSL::SSL)
 endif()
 set(_ssl_SOURCES _ssl.c)
 if(WIN32)
@@ -719,6 +739,9 @@ add_python_extension(_ssl
 set(_tkinter_REQUIRES TCL_LIBRARY TK_LIBRARY TCL_INCLUDE_PATH TK_INCLUDE_PATH)
 set(_tkinter_LIBRARIES ${TCL_LIBRARY} ${TK_LIBRARY})
 set(_tkinter_INCLUDEDIRS ${TCL_INCLUDE_PATH} ${TK_INCLUDE_PATH})
+if(WIN32)
+    set(_tkinter_LIBRARIES TclTk::Tcl TclTk::Tk)
+endif()
 if(UNIX)
     list(APPEND _tkinter_REQUIRES X11_INCLUDE_DIR X11_LIBRARIES)
     list(APPEND _tkinter_LIBRARIES ${X11_LIBRARIES})

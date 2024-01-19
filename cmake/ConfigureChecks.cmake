@@ -75,10 +75,11 @@ message(STATUS "EXPAT_INCLUDE_DIRS=${EXPAT_INCLUDE_DIRS}")
 # ffi
 if(WIN32)
     # import _ctypes
+    add_subdirectory(cmake/externals/libffi CMakeBuild/externals/libffi)
     set(LibFFI_INCLUDE_DIR ${_win32_libffi_folder}/${_win32_arch_name}/include)
     set(LibFFI_LIBRARY
-        ${_win32_libffi_folder}/libffi-8.dll
-        ${_win32_libffi_folder}/libffi-8.lib
+        ${_win32_libffi_folder}/${_win32_arch_name}/libffi-8.dll
+        ${_win32_libffi_folder}/${_win32_arch_name}/libffi-8.lib
     )
 else()
     find_path(LibFFI_INCLUDE_DIR ffi.h)
@@ -110,12 +111,13 @@ message(STATUS "LIBMPDEC_LIBRARIES=${LIBMPDEC_LIBRARIES}")
 # OpenSSL
 if(WIN32)
     # import _ssl
+    add_subdirectory(cmake/externals/openssl CMakeBuild/externals/openssl)
     set(OPENSSL_INCLUDE_DIR ${_win32_openssl_folder}/${_win32_arch_name}/include)
     set(OPENSSL_LIBRARIES
-        ${_win32_openssl_folder}/${_win32_arch_name}/libcrypto-3.cll
+        ${_win32_openssl_folder}/${_win32_arch_name}/libcrypto-3.dll
         ${_win32_openssl_folder}/${_win32_arch_name}/libcrypto-3.pdb
         ${_win32_openssl_folder}/${_win32_arch_name}/libcrypto.lib
-        ${_win32_openssl_folder}/${_win32_arch_name}/libssl-3.cll
+        ${_win32_openssl_folder}/${_win32_arch_name}/libssl-3.dll
         ${_win32_openssl_folder}/${_win32_arch_name}/libssl-3.pdb
         ${_win32_openssl_folder}/${_win32_arch_name}/libssl.lib
     )
@@ -128,6 +130,7 @@ message(STATUS "OPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
 # Tcl/Tk
 if(WIN32)
     # import _tkinter
+    add_subdirectory(cmake/externals/tcltk CMakeBuild/externals/tcltk)
     set(TCL_INCLUDE_PATH ${_win32_tcltk_folder}/${_win32_arch_name}/include)
     set(TK_INCLUDE_PATH ${_win32_tcltk_folder}/${_win32_arch_name}/include)
     set(TCL_LIBRARY ${_win32_tcltk_folder}/${_win32_arch_name}/bin/tcl${_win32_tcltk_major_version}${_win32_tcltk_minor_version}t.dll)
@@ -203,6 +206,7 @@ endif()
 if(WIN32)
     # import _lzma
     # There is a liblzma.vcxproj in PCbuild folder, and _lzma.pyd depends on liblzma
+    add_subdirectory(cmake/externals/liblzma CMakeBuild/externals/liblzma)
     set(LIBLZMA_INCLUDE_DIRS
         ${_win32_xz_folder}/src/liblzma/api
     )
@@ -227,6 +231,7 @@ endif()
 if(WIN32)
     # import _sqlite3
     # There is a sqlite3.vcxproj in PCbuild folder, and _sqlite3.pyd depends on sqlite3
+    add_subdirectory(cmake/externals/sqlite3 CMakeBuild/externals/sqlite3)
     set(SQLite3_INCLUDE_DIRS ${_win32_sqlite_folder})
 else()
     find_package(SQLite3) # https://cmake.org/cmake/help/latest/module/FindSQLite3.html

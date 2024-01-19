@@ -68,6 +68,7 @@ string(REGEX REPLACE "[a-z]+[1-9]$" "" _py_version_patch_no_rc ${PY_VERSION_PATC
 set(_py_version_no_rc "${PY_VERSION_MAJOR}.${PY_VERSION_MINOR}.${_py_version_patch_no_rc}")
 set(_download_link "https://www.python.org/ftp/python/${_py_version_no_rc}/Python-${PY_VERSION}.tgz")
 
+set(_download_3.11.7_md5 "ef61f81ec82c490484219c7f0ec96783")
 set(_download_3.12.0_md5 "d6eda3e1399cef5dfde7c4f319b0596c")
 set(_download_3.12.1_md5 "51c5c22dcbc698483734dff5c8028606")
 
@@ -143,6 +144,9 @@ endif()
 
 if(WIN32)
     enable_language(CXX)
+    if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+        enable_language(ASM_MASM)
+    endif()
 endif()
 
 # This is the major version number of Python
@@ -274,4 +278,241 @@ set(extensions_enabled "" CACHE INTERNAL "" FORCE)
 set(extensions_disabled "" CACHE INTERNAL "" FORCE)
 add_subdirectory(cmake/extensions CMakeBuild/extensions)
 
+# Add other subdirectories
+add_subdirectory(cmake/libpython CMakeBuild/libpython)
+add_subdirectory(cmake/python CMakeBuild/python)
+add_subdirectory(cmake/include CMakeBuild/include)
+add_subdirectory(cmake/lib CMakeBuild/lib)
+add_subdirectory(cmake/tools CMakeBuild/tools)
+
+# Add target to run "Argument Clinic" over all source files
+add_custom_target(clinic
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> ${SRC_DIR}/Tools/clinic/clinic.py --make
+    DEPENDS python
+    WORKING_DIRECTORY ${SRC_DIR}
+    COMMENT "Running 'Argument Clinic' over all source files"
+    VERBATIM
+)
+
+# Add target to generate 'Include/graminit.h' and 'Python/graminit.c'
+if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
+    set(generate_graminit_command $<TARGET_FILE:python> -m Parser.pgen)
+else()
+    set(generate_graminit_command $<TARGET_FILE:pgen>)
+endif()
+add_custom_target(generate_graminit
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${generate_graminit_command}
+        ${SRC_DIR}/Grammar/Grammar
+        $<$<VERSION_GREATER_EQUAL:${PY_VERSION},3.8>:${SRC_DIR}/Grammar/Tokens>
+        ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.h
+        ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.c
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.h
+        ${SRC_DIR}/Include/graminit.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.c
+        ${SRC_DIR}/Python/graminit.c
+    DEPENDS $<IF:$<VERSION_GREATER_EQUAL:${PY_VERSION},3.8>,python,pgen>
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+    COMMENT "Generating '${SRC_DIR}/Include/graminit.h' and '${SRC_DIR}/Python/graminit.c'."
+    VERBATIM
+)
+
+if(PY_VERSION VERSION_GREATER_EQUAL "3.9")
+    # Add target to generate `Tools/peg_generator/pegen/grammar_parser.py`
+    add_custom_target(generate_pegen_metaparser
+        COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${SRC_DIR}/Tools/peg_generator
+            ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> -m pegen
+                -q python
+                ${SRC_DIR}/Tools/peg_generator/pegen/metagrammar.gram
+                -o ${PROJECT_BINARY_DIR}/CMakeFiles/grammar_parser.py
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${PROJECT_BINARY_DIR}/CMakeFiles/grammar_parser.py
+            ${SRC_DIR}/Tools/peg_generator/pegen/grammar_parser.py
+        DEPENDS python
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+        COMMENT "Generating '${SRC_DIR}/Tools/peg_generator/pegen/grammar_parser.py'"
+        VERBATIM
+    )
+
+    # Add target to generate `Parser/pegen/parse.c`
+    add_custom_target(generate_pegen_parse
+        COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${SRC_DIR}/Tools/peg_generator
+            ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> -m pegen
+                -q c
+                ${SRC_DIR}/Grammar/python.gram
+                ${SRC_DIR}/Grammar/Tokens
+                -o ${PROJECT_BINARY_DIR}/CMakeFiles/parse.c
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${PROJECT_BINARY_DIR}/CMakeFiles/parse.c
+            ${SRC_DIR}/Parser/pegen/parse.c
+        DEPENDS python
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+        COMMENT "Generating '${SRC_DIR}/Parser/pegen/parse.c'"
+        VERBATIM
+    )
+endif()  # PY_VERSION >= 3.9
+
+# Add target to generate 'opcode.h' header file
+add_custom_target(generate_opcode_h
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> ${SRC_DIR}/Tools/scripts/generate_opcode_h.py
+        ${SRC_DIR}/Lib/opcode.py
+        ${PROJECT_BINARY_DIR}/CMakeFiles/opcode.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${PROJECT_BINARY_DIR}/CMakeFiles/opcode.h
+        ${SRC_DIR}/Include/opcode.h
+    DEPENDS python
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+    COMMENT "Generating '${SRC_DIR}/Include/opcode.h'."
+    VERBATIM
+)
+
+# Add target to generate 'Include/Python-ast.h' from 'Python.asdl'
+add_custom_target(generate_python_ast_h
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> ${SRC_DIR}/Parser/asdl_c.py
+        -h ${SRC_DIR}/Include
+        ${SRC_DIR}/Parser/Python.asdl
+    DEPENDS python
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+    COMMENT "Generating '${SRC_DIR}/Include/Python-ast.h'"
+    VERBATIM
+)
+
+# Add target to generate 'Python/Python-ast.c' from 'Python.asdl'
+add_custom_target(generate_python_ast_c
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> ${SRC_DIR}/Parser/asdl_c.py
+        -c ${SRC_DIR}/Python
+        ${SRC_DIR}/Parser/Python.asdl
+    DEPENDS python
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+    COMMENT "Generating '${SRC_DIR}/Python/Python-ast.c'"
+    VERBATIM
+)
+
+# If needed, copy 'asdl.py' and 'Python.asdl' into build directory so that 'test_asdl_parser' passes.
+set(_asdl_subdir ${LIBDIR})
+if(WIN32)
+    set(_asdl_subdir )
+endif()
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBDIR}/Parser)
+configure_file(
+    ${SRC_DIR}/Parser/Python.asdl
+    ${PROJECT_BINARY_DIR}/${_asdl_subdir}/Parser/Python.asdl
+    COPYONLY
+)
+configure_file(
+    ${SRC_DIR}/Parser/asdl.py
+    ${PROJECT_BINARY_DIR}/${_asdl_subdir}/Parser/asdl.py
+    COPYONLY
+)
+
 show_extension_summary()
+
+if(UNIX)
+    # python.pc
+    configure_file(cmake/python.pc.in
+                  ${PROJECT_BINARY_DIR}/Misc/python-${LIBPYTHON_VERSION}.pc @ONLY)
+    configure_file(cmake/python.pc.in
+                  ${PROJECT_BINARY_DIR}/Misc/python-${PY_VERSION_MAJOR}.pc @ONLY)
+    configure_file(cmake/python.pc.in
+                  ${PROJECT_BINARY_DIR}/Misc/python.pc @ONLY)
+    if(INSTALL_DEVELOPMENT)
+        install(FILES
+                    ${PROJECT_BINARY_DIR}/Misc/python-${LIBPYTHON_VERSION}.pc
+                    ${PROJECT_BINARY_DIR}/Misc/python-${PY_VERSION_MAJOR}.pc
+                    ${PROJECT_BINARY_DIR}/Misc/python.pc
+                DESTINATION lib/pkgconfig
+                COMPONENT Development)
+    endif()
+
+    # Makefile
+    set(MAKEFILE_LDSHARED_FLAGS "-shared")
+    if(APPLE)
+        set(MAKEFILE_LDSHARED_FLAGS "-dynamiclib -headerpad_max_install_names -undefined dynamic_lookup")
+    endif()
+    configure_file(cmake/makefile-variables.in
+                   ${BIN_BUILD_DIR}/Makefile @ONLY)
+    if(INSTALL_DEVELOPMENT)
+        install(FILES ${BIN_BUILD_DIR}/Makefile
+                DESTINATION ${LIB_CONFIG_INSTALL_DIR}
+                RENAME Makefile
+                COMPONENT Development)
+    endif()
+
+    # Utility scripts
+    if(INSTALL_DEVELOPMENT)
+        install(FILES ${SRC_DIR}/install-sh ${SRC_DIR}/Modules/makesetup
+                DESTINATION ${LIB_CONFIG_INSTALL_DIR}
+                COMPONENT Development)
+    endif()
+
+    # Install manual
+    if(INSTALL_MANUAL)
+        set(_install_man FILES ${SRC_DIR}/Misc/python.man DESTINATION share/man/man1 COMPONENT Runtime)
+        install(${_install_man} RENAME python${LIBPYTHON_VERSION}.1)
+        install(${_install_man} RENAME python${PY_VERSION_MAJOR}.1)
+    endif()
+
+endif()
+
+# Create an empty lib-dynload folder, even if we don't have any extensions
+# to go in there.  bin/python uses this to auto-determine the exec_prefix
+# and properly generate the _sysconfigdata.py
+file(MAKE_DIRECTORY "${EXTENSION_BUILD_DIR}")
+install(DIRECTORY DESTINATION ${EXTENSION_INSTALL_DIR})
+
+include(CMakePackageConfigHelpers)
+
+# Configure 'PythonConfig.cmake' for a build tree
+set(CONFIG_DIR_CONFIG ${CONFIG_BUILD_DIR})
+set(INCLUDE_DIR_CONFIG ${INCLUDE_BUILD_DIR})
+set(PYTHON_CONFIG_CODE "####### Expanded from \@PYTHON_CONFIG_CODE\@ #######\n")
+set(PYTHON_CONFIG_CODE "${PYTHON_CONFIG_CODE}list(APPEND PYTHON_INCLUDE_DIR \"${PYCONFIG_BUILD_DIR}\")\n")
+set(PYTHON_CONFIG_CODE "${PYTHON_CONFIG_CODE}##################################################")
+set(python_config ${CONFIG_BUILD_DIR}/PythonConfig.cmake)
+configure_package_config_file(
+    cmake/PythonConfig.cmake.in
+    ${python_config}
+    INSTALL_DESTINATION ${PROJECT_BINARY_DIR}
+    PATH_VARS CONFIG_DIR_CONFIG INCLUDE_DIR_CONFIG
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+# Configure 'PythonConfig.cmake' for an install tree
+set(CONFIG_DIR_CONFIG ${CONFIG_INSTALL_DIR})
+set(INCLUDE_DIR_CONFIG ${INCLUDE_INSTALL_DIR})
+set(PYTHON_CONFIG_CODE "")
+set(python_install_config ${PROJECT_BINARY_DIR}/CMakeFiles/PythonConfig.cmake)
+configure_package_config_file(
+    cmake/PythonConfig.cmake.in
+    ${python_install_config}
+    INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/${CONFIG_INSTALL_DIR}
+    PATH_VARS CONFIG_DIR_CONFIG INCLUDE_DIR_CONFIG
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+# Configure 'PythonTargets.cmake' and 'PythonConfigVersion.cmake
+get_property(PYTHON_TARGETS GLOBAL PROPERTY PYTHON_TARGETS)
+export(TARGETS ${PYTHON_TARGETS} APPEND FILE ${CONFIG_BUILD_DIR}/PythonTargets.cmake)
+
+set(python_config_version ${CONFIG_BUILD_DIR}/PythonConfigVersion.cmake)
+write_basic_package_version_file(
+    ${python_config_version}
+    VERSION ${PY_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+if(INSTALL_DEVELOPMENT)
+    # Install 'PythonTargets.cmake', 'PythonConfig.cmake' and 'PythonConfigVersion.cmake
+    # install(EXPORT PythonTargets
+    #     FILE PythonTargets.cmake
+    #     DESTINATION ${CONFIG_INSTALL_DIR} COMPONENT Development)
+
+    install(
+        FILES ${python_install_config} ${python_config_version}
+        DESTINATION ${CONFIG_INSTALL_DIR} COMPONENT Development)
+endif()
+
+# Install License
+set(license_destination ${PYTHONHOME})
+install(FILES ${SRC_DIR}/LICENSE DESTINATION ${license_destination} COMPONENT Runtime RENAME LICENSE.txt)

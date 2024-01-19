@@ -1,0 +1,184 @@
+# Translation of PCbuild/liblzma.vcxproj
+
+set(lzma_source_dir ${_win32_xz_folder})
+
+set(lzma_sources
+    ${lzma_source_dir}/src/common/tuklib_cpucores.c
+    ${lzma_source_dir}/src/common/tuklib_physmem.c
+    ${lzma_source_dir}/src/liblzma/check/check.c
+    ${lzma_source_dir}/src/liblzma/check/crc32_fast.c
+    ${lzma_source_dir}/src/liblzma/check/crc32_table.c
+    ${lzma_source_dir}/src/liblzma/check/crc64_fast.c
+    ${lzma_source_dir}/src/liblzma/check/crc64_table.c
+    ${lzma_source_dir}/src/liblzma/check/sha256.c
+    ${lzma_source_dir}/src/liblzma/common/alone_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/alone_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/auto_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/block_buffer_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/block_buffer_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/block_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/block_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/block_header_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/block_header_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/block_util.c
+    ${lzma_source_dir}/src/liblzma/common/common.c
+    ${lzma_source_dir}/src/liblzma/common/easy_buffer_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/easy_decoder_memusage.c
+    ${lzma_source_dir}/src/liblzma/common/easy_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/easy_encoder_memusage.c
+    ${lzma_source_dir}/src/liblzma/common/easy_preset.c
+    ${lzma_source_dir}/src/liblzma/common/filter_buffer_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/filter_buffer_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/filter_common.c
+    ${lzma_source_dir}/src/liblzma/common/filter_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/filter_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/filter_flags_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/filter_flags_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/hardware_cputhreads.c
+    ${lzma_source_dir}/src/liblzma/common/hardware_physmem.c
+    ${lzma_source_dir}/src/liblzma/common/index.c
+    ${lzma_source_dir}/src/liblzma/common/index_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/index_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/index_hash.c
+    ${lzma_source_dir}/src/liblzma/common/outqueue.c
+    ${lzma_source_dir}/src/liblzma/common/stream_buffer_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/stream_buffer_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/stream_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/stream_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/stream_encoder_mt.c
+    ${lzma_source_dir}/src/liblzma/common/stream_flags_common.c
+    ${lzma_source_dir}/src/liblzma/common/stream_flags_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/stream_flags_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/vli_decoder.c
+    ${lzma_source_dir}/src/liblzma/common/vli_encoder.c
+    ${lzma_source_dir}/src/liblzma/common/vli_size.c
+    ${lzma_source_dir}/src/liblzma/delta/delta_common.c
+    ${lzma_source_dir}/src/liblzma/delta/delta_decoder.c
+    ${lzma_source_dir}/src/liblzma/delta/delta_encoder.c
+    ${lzma_source_dir}/src/liblzma/lzma/fastpos_table.c
+    ${lzma_source_dir}/src/liblzma/lzma/lzma2_decoder.c
+    ${lzma_source_dir}/src/liblzma/lzma/lzma2_encoder.c
+    ${lzma_source_dir}/src/liblzma/lzma/lzma_decoder.c
+    ${lzma_source_dir}/src/liblzma/lzma/lzma_encoder.c
+    ${lzma_source_dir}/src/liblzma/lzma/lzma_encoder_optimum_fast.c
+    ${lzma_source_dir}/src/liblzma/lzma/lzma_encoder_optimum_normal.c
+    ${lzma_source_dir}/src/liblzma/lzma/lzma_encoder_presets.c
+    ${lzma_source_dir}/src/liblzma/lz/lz_decoder.c
+    ${lzma_source_dir}/src/liblzma/lz/lz_encoder.c
+    ${lzma_source_dir}/src/liblzma/lz/lz_encoder_mf.c
+    ${lzma_source_dir}/src/liblzma/rangecoder/price_table.c
+    ${lzma_source_dir}/src/liblzma/simple/arm.c
+    ${lzma_source_dir}/src/liblzma/simple/armthumb.c
+    ${lzma_source_dir}/src/liblzma/simple/ia64.c
+    ${lzma_source_dir}/src/liblzma/simple/powerpc.c
+    ${lzma_source_dir}/src/liblzma/simple/simple_coder.c
+    ${lzma_source_dir}/src/liblzma/simple/simple_decoder.c
+    ${lzma_source_dir}/src/liblzma/simple/simple_encoder.c
+    ${lzma_source_dir}/src/liblzma/simple/sparc.c
+    ${lzma_source_dir}/src/liblzma/simple/x86.c
+)
+
+set(lzma_headers
+    ${lzma_source_dir}/src/common/mythread.h
+    ${lzma_source_dir}/src/common/sysdefs.h
+    ${lzma_source_dir}/src/common/tuklib_common.h
+    ${lzma_source_dir}/src/common/tuklib_config.h
+    ${lzma_source_dir}/src/common/tuklib_cpucores.h
+    ${lzma_source_dir}/src/common/tuklib_integer.h
+    ${lzma_source_dir}/src/common/tuklib_physmem.h
+    ${lzma_source_dir}/src/liblzma/api/lzma.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/base.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/bcj.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/block.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/check.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/container.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/delta.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/filter.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/hardware.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/index.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/index_hash.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/lzma12.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/stream_flags.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/version.h
+    ${lzma_source_dir}/src/liblzma/api/lzma/vli.h
+    ${lzma_source_dir}/src/liblzma/check/check.h
+    ${lzma_source_dir}/src/liblzma/check/crc32_table_be.h
+    ${lzma_source_dir}/src/liblzma/check/crc32_table_le.h
+    ${lzma_source_dir}/src/liblzma/check/crc64_table_be.h
+    ${lzma_source_dir}/src/liblzma/check/crc64_table_le.h
+    ${lzma_source_dir}/src/liblzma/check/crc_macros.h
+    ${lzma_source_dir}/src/liblzma/common/alone_decoder.h
+    ${lzma_source_dir}/src/liblzma/common/block_buffer_encoder.h
+    ${lzma_source_dir}/src/liblzma/common/block_decoder.h
+    ${lzma_source_dir}/src/liblzma/common/block_encoder.h
+    ${lzma_source_dir}/src/liblzma/common/common.h
+    ${lzma_source_dir}/src/liblzma/common/easy_preset.h
+    ${lzma_source_dir}/src/liblzma/common/filter_common.h
+    ${lzma_source_dir}/src/liblzma/common/filter_decoder.h
+    ${lzma_source_dir}/src/liblzma/common/filter_encoder.h
+    ${lzma_source_dir}/src/liblzma/common/index.h
+    ${lzma_source_dir}/src/liblzma/common/index_encoder.h
+    ${lzma_source_dir}/src/liblzma/common/memcmplen.h
+    ${lzma_source_dir}/src/liblzma/common/outqueue.h
+    ${lzma_source_dir}/src/liblzma/common/stream_decoder.h
+    ${lzma_source_dir}/src/liblzma/common/stream_flags_common.h
+    ${lzma_source_dir}/src/liblzma/delta/delta_common.h
+    ${lzma_source_dir}/src/liblzma/delta/delta_decoder.h
+    ${lzma_source_dir}/src/liblzma/delta/delta_encoder.h
+    ${lzma_source_dir}/src/liblzma/delta/delta_private.h
+    ${lzma_source_dir}/src/liblzma/lzma/fastpos.h
+    ${lzma_source_dir}/src/liblzma/lzma/lzma2_decoder.h
+    ${lzma_source_dir}/src/liblzma/lzma/lzma2_encoder.h
+    ${lzma_source_dir}/src/liblzma/lzma/lzma_common.h
+    ${lzma_source_dir}/src/liblzma/lzma/lzma_decoder.h
+    ${lzma_source_dir}/src/liblzma/lzma/lzma_encoder.h
+    ${lzma_source_dir}/src/liblzma/lzma/lzma_encoder_private.h
+    ${lzma_source_dir}/src/liblzma/lz/lz_decoder.h
+    ${lzma_source_dir}/src/liblzma/lz/lz_encoder.h
+    ${lzma_source_dir}/src/liblzma/lz/lz_encoder_hash.h
+    ${lzma_source_dir}/src/liblzma/lz/lz_encoder_hash_table.h
+    ${lzma_source_dir}/src/liblzma/rangecoder/price.h
+    ${lzma_source_dir}/src/liblzma/rangecoder/range_common.h
+    ${lzma_source_dir}/src/liblzma/rangecoder/range_decoder.h
+    ${lzma_source_dir}/src/liblzma/rangecoder/range_encoder.h
+    ${lzma_source_dir}/src/liblzma/simple/simple_coder.h
+    ${lzma_source_dir}/src/liblzma/simple/simple_decoder.h
+    ${lzma_source_dir}/src/liblzma/simple/simple_encoder.h
+    ${lzma_source_dir}/src/liblzma/simple/simple_private.h
+    ${lzma_source_dir}/windows/vs2019/config.h
+)
+
+add_library(liblzma STATIC
+    ${lzma_sources}
+    ${lzma_headers}
+)
+add_library(liblzma::liblzma ALIAS liblzma)
+
+target_include_directories(liblzma
+    PUBLIC
+        ${lzma_source_dir}/src/liblzma/api
+    PRIVATE
+        ${lzma_source_dir}/windows/vs2019
+        ${lzma_source_dir}/src/liblzma/common
+        ${lzma_source_dir}/src/common
+        ${lzma_source_dir}/src/liblzma/check
+        ${lzma_source_dir}/src/liblzma/delta
+        ${lzma_source_dir}/src/liblzma/lz
+        ${lzma_source_dir}/src/liblzma/lzma
+        ${lzma_source_dir}/src/liblzma/rangecoder
+        ${lzma_source_dir}/src/liblzma/simple
+)
+
+target_compile_definitions(liblzma
+    PUBLIC
+        WIN32
+        HAVE_CONFIG_H
+    PRIVATE
+        _LIB
+)
+
+if(MSVC)
+    target_compile_options(liblzma
+        PUBLIC /wd4028 /wd4113 /wd4133 /wd4244 /wd4267 /wd4996
+    )
+endif()
