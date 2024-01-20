@@ -3,10 +3,15 @@ add_definitions(-DPy_BUILD_CORE_BUILTIN)
 add_definitions(-DNDEBUG)
 
 set(MODULE_SOURCES # Equivalent to MODULE_OBJS in Makefile.pre
-    ${PROJECT_BINARY_DIR}/CMakeFiles/config.c
     ${SRC_DIR}/Modules/gcmodule.c
     ${SRC_DIR}/Modules/main.c
 )
+
+if(PY_VERSION VERSION_LESS "3.11")
+    list(APPEND MODULE_SOURCES
+        ${PROJECT_BINARY_DIR}/CMakeFiles/config.c
+    )
+endif()
 
 if(UNIX)
     list(APPEND MODULE_SOURCES
@@ -29,12 +34,12 @@ elseif(WIN32)
     set(_win32_getpath_file ${SRC_DIR}/Modules/getpath.c)
     if(PY_VERSION VERSION_LESS_EQUAL "3.10")
         set(_win32_getpath_file ${SRC_DIR}/PC/getpathp.c)
+        list(APPEND MODULE_SOURCES
+            ${_win32_getpath_file}
+        )
     endif()
     add_definitions(-DPY3_DLLNAME="${PY3_DLLNAME}")
     add_definitions(-DPYTHON_DLL_NAME="python${PY_VERSION_MAJOR}${PY_VERSION_MINOR}")
-    list(APPEND MODULE_SOURCES
-        ${_win32_getpath_file}
-    )
     # HACK To workaround limitation in escaping logic of CMake, the pythonpath
     #      separator is conditionally set depending of the version of Visual Studio.
     #      See http://cmake.org/Bug/view.php?id=14073
@@ -72,10 +77,10 @@ elseif(WIN32)
         set_property(
             SOURCE ${_win32_getpath_file}
             PROPERTY COMPILE_DEFINITIONS
-                "PREFIX=\"${CMAKE_INSTALL_PREFIX}\""
-                "EXEC_PREFIX=\"${CMAKE_INSTALL_PREFIX}\""
+                "PREFIX=\"NULL\""
+                "EXEC_PREFIX=\"NULL\""
                 "VERSION=\"${PY_VERSION_MAJOR}.${PY_VERSION_MINOR}\""
-                "VPATH=\".\""
+                "VPATH=\".\\\\.\""
                 "PYTHONPATH=\"${PYTHONPATH}\""
                 "PLATLIBDIR=\"DLLs\""
             )
@@ -237,9 +242,13 @@ if(UNIX AND HAVE_DLOPEN)
         )
 elseif(WIN32)
     list(APPEND DYNLOAD_SOURCES
-        ${SRC_DIR}/PC/dl_nt.c
         ${SRC_DIR}/Python/dynload_win.c
         )
+    if(PY_VERSION VERSION_LESS "3.11")
+        list(APPEND DYNLOAD_SOURCES
+            ${SRC_DIR}/PC/dl_nt.c
+            )
+    endif()
     set(ms_dll_id "${PY_VERSION_MAJOR}.${PY_VERSION_MINOR}")
     if(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
       set(ms_dll_id "${ms_dll_id}-32")
@@ -348,6 +357,9 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
         ${SRC_DIR}/Python/assemble.c
         ${SRC_DIR}/Python/ceval_gil.c
         ${SRC_DIR}/Python/flowgraph.c
+        ${SRC_DIR}/Python/instrumentation.c
+        ${SRC_DIR}/Python/intrinsics.c
+        ${SRC_DIR}/Python/legacy_tracing.c
         ${SRC_DIR}/Python/perf_trampoline.c
         ${SRC_DIR}/Python/tracemalloc.c
     )
@@ -358,9 +370,11 @@ if(UNIX)
         ${SRC_DIR}/Python/frozenmain.c
     )
 else()
-    list(APPEND PYTHON_COMMON_SOURCES
-        ${SRC_DIR}/Python/frozen.c
-    )
+    if(PY_VERSION VERSION_LESS "3.11")
+        list(APPEND PYTHON_COMMON_SOURCES
+            ${SRC_DIR}/Python/frozen.c
+        )
+    endif()
 endif()
 
 if(EMSCRIPTEN)
@@ -386,7 +400,7 @@ if(WIN32)
     set_property(
         SOURCE ${SRC_DIR}/Python/sysmodule.c
         PROPERTY COMPILE_DEFINITIONS
-            "VPATH=\"..\\..\""
+            "VPATH=\"..\\\\..\""
         )
 endif()
 
@@ -429,7 +443,6 @@ if(WIN32)
         endif()
     endforeach()
 endif()
-list(APPEND LIBPYTHON_OMIT_FROZEN_SOURCES ${builtin_extension_sources})
 
 # Collect builtin extension link libraries
 set(builtin_link_libraries)
@@ -458,6 +471,23 @@ foreach(name ${builtin_extensions})
     endif()
 endforeach()
 
+# List of always builtin extensions
+get_property(always_builtin_extensions GLOBAL PROPERTY always_builtin_extensions)
+
+# Collect always builtin extension sources
+set(always_builtin_extension_sources)
+foreach(name ${always_builtin_extensions})
+    get_property(extension_${name}_sources GLOBAL PROPERTY extension_${name}_sources)
+    list(APPEND always_builtin_extension_sources ${extension_${name}_sources})
+endforeach()
+
+# Collect always builtin extension link libraries
+set(always_builtin_link_libraries)
+foreach(name ${always_builtin_extensions})
+    get_property(extension_${name}_link_libraries GLOBAL PROPERTY extension_${name}_link_libraries)
+    list(APPEND always_builtin_link_libraries ${extension_${name}_link_libraries})
+endforeach()
+
 include_directories(${builtin_includedirs})
 
 # Create the parts of config.c for platform-specific and user-controlled
@@ -476,6 +506,11 @@ else()
     set(PyInit_imp "PyInit_imp")
 endif()
 
+if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+    set(_tokenize_init "\nextern PyObject* PyInit__tokenize(void);")
+    set(_tokenize_entry "\n\n    /* This lives in Python/Python-tokenizer.c */\n    {\"_tokenize\", PyInit__tokenize},")
+endif()
+
 configure_file(
     ${PROJECT_SOURCE_DIR}/cmake/config.c.in
     ${PROJECT_BINARY_DIR}/CMakeFiles/config.c
@@ -485,25 +520,39 @@ configure_file(
 set(LIBPYTHON_TARGET_LIBRARIES
     ${builtin_link_libraries}
     )
+set(FREEZE_MODULE_TARGET_LIBRARIES
+    ${always_builtin_link_libraries}
+    )
 if(HAVE_LIBDL)
     list(APPEND LIBPYTHON_TARGET_LIBRARIES ${HAVE_LIBDL})
+    list(APPEND FREEZE_MODULE_TARGET_LIBRARIES ${HAVE_LIBDL})
 endif()
 if(WITH_THREAD OR PY_VERSION VERSION_GREATER_EQUAL "3.7")
     list(APPEND LIBPYTHON_TARGET_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+    list(APPEND FREEZE_MODULE_TARGET_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
 endif()
 if(UNIX)
     list(APPEND LIBPYTHON_TARGET_LIBRARIES ${LIBUTIL_LIBRARIES} ${M_LIBRARIES})
+    list(APPEND FREEZE_MODULE_TARGET_LIBRARIES ${LIBUTIL_LIBRARIES} ${M_LIBRARIES})
 endif()
 if(WIN32)
     list(APPEND LIBPYTHON_TARGET_LIBRARIES ws2_32) # Required by signalmodule
+    list(APPEND FREEZE_MODULE_TARGET_LIBRARIES ws2_32) # Required by signalmodule
     if(PY_VERSION VERSION_GREATER_EQUAL "3.5")
         list(APPEND LIBPYTHON_TARGET_LIBRARIES version) # Required by sysmodule
+        list(APPEND FREEZE_MODULE_TARGET_LIBRARIES version) # Required by sysmodule
     endif()
     if(PY_VERSION VERSION_GREATER_EQUAL "3.6")
         list(APPEND LIBPYTHON_TARGET_LIBRARIES shlwapi) # Required by PC/getpathp
+        list(APPEND FREEZE_MODULE_TARGET_LIBRARIES shlwapi) # Required by PC/getpathp
     endif()
     if(PY_VERSION VERSION_GREATER_EQUAL "3.9")
         list(APPEND LIBPYTHON_TARGET_LIBRARIES pathcch)
+        list(APPEND FREEZE_MODULE_TARGET_LIBRARIES pathcch)
+    endif()
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+        list(APPEND LIBPYTHON_TARGET_LIBRARIES bcrypt)
+        list(APPEND FREEZE_MODULE_TARGET_LIBRARIES bcrypt)
     endif()
 endif()
 
@@ -513,15 +562,36 @@ set(LIBPYTHON_FROZEN_SOURCES )
 set(_freeze_module_c ${SRC_DIR}/Programs/_freeze_module.c)
 if(PY_VERSION VERSION_LESS_EQUAL "3.10")
     set(_freeze_module_c ${SRC_DIR}/Programs/_freeze_importlib.c)
+else()
+    list(APPEND _freeze_module_c
+        ${SRC_DIR}/Modules/getpath_noop.c
+    )
+    if(WIN32)
+        list(APPEND _freeze_module_c
+            ${SRC_DIR}/PC/config_minimal.c
+        )
+        set_property(
+            SOURCE ${SRC_DIR}/PC/config_minimal.c
+            PROPERTY COMPILE_DEFINITIONS
+                Py_NO_ENABLE_SHARED
+            )
+    endif()
 endif()
 add_executable(_freeze_module
     ${_freeze_module_c}
     ${LIBPYTHON_OMIT_FROZEN_SOURCES}
+    ${always_builtin_extension_sources}
 )
-target_link_libraries(_freeze_module ${LIBPYTHON_TARGET_LIBRARIES})
+target_link_libraries(_freeze_module ${FREEZE_MODULE_TARGET_LIBRARIES})
 if(builtin_compile_definitions_without_py_limited_api)
     target_compile_definitions(_freeze_module PUBLIC ${builtin_compile_definitions_without_py_limited_api})
 endif()
+target_compile_definitions(_freeze_module
+    PUBLIC
+        Py_NO_ENABLE_SHARED
+)
+
+list(APPEND LIBPYTHON_OMIT_FROZEN_SOURCES ${builtin_extension_sources})
 
 # Freeze modules
 set(LIBPYTHON_FROZEN_SOURCES)
@@ -566,25 +636,37 @@ endif()
 if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
     find_package(Python3 REQUIRED)
     set(_freeze_module_py ${SRC_DIR}/Programs/_freeze_module.py)
-    execute_process(
+    set(_deepfreeze_py ${SRC_DIR}/Tools/scripts/deepfreeze.py)
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
+        set(_deepfreeze_py ${SRC_DIR}/Tools/build/deepfreeze.py)
+    endif()
+    list(JOIN LIBPYTHON_FROZEN_SOURCES ", " _frozen_source_paths)
+    add_custom_command(
+        OUTPUT ${LIBPYTHON_FROZEN_SOURCES}
         COMMAND
-            ${Python3_EXECUTABLE}
-            ${_freeze_module_py}
-            getpath
-            ${SRC_DIR}/Modules/getpath.py
-            ${SRC_DIR}/Python/frozen_modules/getpath.h
-    )
-    execute_process(
-        COMMAND
-            ${Python3_EXECUTABLE}
-            ${_freeze_module_py}
+            ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_freeze_module>
             frozen_only
             ${SRC_DIR}/Tools/freeze/flag.py
             ${SRC_DIR}/Python/frozen_modules/frozen_only.h
+        DEPENDS
+            _freeze_module
+            ${SRC_DIR}/Tools/freeze/flag.py
+        COMMENT
+            "Generating: ${_frozen_source_paths}"
     )
+    set(_deepfreeze_args)
     foreach(src ${LIBPYTHON_FROZEN_SOURCES})
         get_filename_component(module_name ${src} NAME_WLE)
-        if((${module_name} STREQUAL "frozen_only") OR (${module_name} STREQUAL "getpath"))
+        if(${module_name} STREQUAL "getpath")
+            continue()
+        endif()
+        list(APPEND _deepfreeze_args
+            "${src}:${module_name}"
+        )
+        if(${module_name} STREQUAL "frozen_only")
+            continue()
+        endif()
+        if(EXISTS ${src})
             continue()
         endif()
         string(REPLACE "." ";" module_name_list ${module_name})
@@ -600,15 +682,46 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
         if(NOT EXISTS ${module_path})
             message(FATAL_ERROR "Python file '${module_path}' doesn't exists!!")
         endif()
-        execute_process(
+        add_custom_command(
+            OUTPUT ${LIBPYTHON_FROZEN_SOURCES}
             COMMAND
-                ${Python3_EXECUTABLE}
-                ${_freeze_module_py}
+                ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_freeze_module>
                 ${module_name}
                 ${module_path}
                 ${src}
+            DEPENDS
+                _freeze_module
+                ${module_path}
+            APPEND
         )
     endforeach()
+    add_custom_command(
+        OUTPUT ${LIBPYTHON_FROZEN_SOURCES}
+        COMMAND
+            ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_freeze_module>
+            getpath
+            ${SRC_DIR}/Modules/getpath.py
+            ${SRC_DIR}/Python/frozen_modules/getpath.h
+        DEPENDS
+            _freeze_module
+            ${SRC_DIR}/Modules/getpath.py
+        APPEND
+    )
+    add_custom_command(
+        OUTPUT ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+        COMMAND
+            ${Python3_EXECUTABLE}
+            # "py"
+            ${_deepfreeze_py}
+            ${_deepfreeze_args}
+            "-o"
+            ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+        DEPENDS
+            _freeze_module
+            ${_deepfreeze_py}
+        COMMENT
+            "Generating: ${SRC_DIR}/Python/deepfreeze/deepfreeze.c"
+    )
 else()
     add_custom_command(
         OUTPUT ${LIBPYTHON_FROZEN_SOURCES}
@@ -669,10 +782,22 @@ set(LIBPYTHON_SOURCES
     ${LIBPYTHON_OMIT_FROZEN_SOURCES}
     ${LIBPYTHON_FROZEN_SOURCES}
 )
-if(UNIX)
+if(UNIX OR (PY_VERSION VERSION_GREATER_EQUAL "3.11"))
     list(APPEND LIBPYTHON_SOURCES
         ${SRC_DIR}/Python/frozen.c
     )
+endif()
+if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+    list(APPEND LIBPYTHON_SOURCES
+        ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+        ${SRC_DIR}/Modules/getpath.c
+    )
+    if(WIN32)
+        list(APPEND LIBPYTHON_SOURCES
+            ${SRC_DIR}/PC/dl_nt.c
+            ${PROJECT_BINARY_DIR}/CMakeFiles/config.c
+        )
+    endif()
 endif()
 
 # Build python libraries
@@ -712,6 +837,16 @@ endfunction()
 
 if(BUILD_LIBPYTHON_SHARED)
     add_libpython(libpython-shared SHARED 1 Runtime)
+    if(${WIN32})
+        add_custom_command(TARGET libpython-shared POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:libpython-shared> $<TARGET_FILE_DIR:libpython-shared>
+            COMMAND_EXPAND_LISTS
+        )
+        install(FILES
+            $<TARGET_RUNTIME_DLLS:libpython-shared>
+            DESTINATION ${LIBPYTHON_LIBDIR}
+        )
+    endif()
     set_target_properties(libpython-shared PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_ARCHIVEDIR}
     )

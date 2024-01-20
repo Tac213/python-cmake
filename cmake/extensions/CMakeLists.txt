@@ -27,7 +27,7 @@ add_python_extension(_codecs_tw ${WIN32_BUILTIN} SOURCES cjkcodecs/_codecs_tw.c)
 add_python_extension(_collections ${WIN32_BUILTIN} ${PY3_BUILTIN} SOURCES _collectionsmodule.c) # Container types
 add_python_extension(_crypt REQUIRES HAVE_LIBCRYPT SOURCES _cryptmodule.c LIBRARIES ${HAVE_LIBCRYPT})
 add_python_extension(_csv ${WIN32_BUILTIN} SOURCES _csv.c)
-add_python_extension(_ctypes_test NEVER_BUILTIN REQUIRES HAVE_LIBM SOURCES _ctypes/_ctypes_test.c LIBRARIES ${M_LIBRARIES})
+# add_python_extension(_ctypes_test NEVER_BUILTIN REQUIRES HAVE_LIBM SOURCES _ctypes/_ctypes_test.c LIBRARIES ${M_LIBRARIES})
 add_python_extension(_datetime ${WIN32_BUILTIN} REQUIRES HAVE_LIBM SOURCES _datetimemodule.c LIBRARIES ${M_LIBRARIES})
 add_python_extension(_functools ${WIN32_BUILTIN} ${PY3_BUILTIN} SOURCES _functoolsmodule.c DEFINITIONS Py_BUILD_CORE) # Tools for working with functions and callable objects
 add_python_extension(_heapq ${WIN32_BUILTIN} SOURCES _heapqmodule.c)
@@ -64,17 +64,17 @@ if(PY_VERSION VERSION_LESS "3.10")
 endif()
 add_python_extension(_random ${WIN32_BUILTIN} SOURCES _randommodule.c)
 add_python_extension(_struct ${WIN32_BUILTIN} SOURCES _struct.c)
-add_python_extension(_testcapi NEVER_BUILTIN SOURCES _testcapimodule.c)
+# add_python_extension(_testcapi NEVER_BUILTIN SOURCES _testcapimodule.c)
 
 set(thread_REQUIRES)
 if(PY_VERSION VERSION_LESS "3.7")
   list(APPEND thread_REQUIRES WITH_THREAD)
 endif()
 add_python_extension(_thread ALWAYS_BUILTIN REQUIRES ${thread_REQUIRES} SOURCES _threadmodule.c DEFINITIONS Py_BUILD_CORE)
-add_python_extension(time ${WIN32_BUILTIN} ${PY3_BUILTIN} REQUIRES HAVE_LIBM SOURCES timemodule.c DEFINITIONS Py_BUILD_CORE LIBRARIES ${M_LIBRARIES} ${TIMEMODULE_LIB})
+add_python_extension(time ${WIN32_BUILTIN} ${PY3_ALWAYS_BUILTIN} REQUIRES HAVE_LIBM SOURCES timemodule.c DEFINITIONS Py_BUILD_CORE LIBRARIES ${M_LIBRARIES} ${TIMEMODULE_LIB})
 add_python_extension(unicodedata SOURCES unicodedata.c)
 
-add_python_extension(atexit BUILTIN REQUIRES IS_PY3 SOURCES atexitmodule.c) # Register functions to be run at interpreter-shutdown
+add_python_extension(atexit ALWAYS_BUILTIN REQUIRES IS_PY3 SOURCES atexitmodule.c) # Register functions to be run at interpreter-shutdown
 add_python_extension(_codecs BUILTIN SOURCES _codecsmodule.c) # access to the builtin codecs and codec registry
 add_python_extension(faulthandler ALWAYS_BUILTIN REQUIRES IS_PY3 SOURCES faulthandler.c)
 add_python_extension(_opcode ${WIN32_BUILTIN} REQUIRES IS_PY3 SOURCES _opcode.c)
@@ -163,6 +163,10 @@ if(PY_VERSION VERSION_EQUAL "3.9")
     add_python_extension(_peg_parser ALWAYS_BUILTIN SOURCES _peg_parser.c)
 endif()
 
+if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+    add_python_extension(_typing ${WIN32_BUILTIN} SOURCES _typingmodule.c)
+endif()
+
 # UNIX-only extensions
 add_python_extension(fcntl REQUIRES UNIX SOURCES fcntlmodule.c)
 add_python_extension(grp REQUIRES UNIX SOURCES grpmodule.c)
@@ -228,7 +232,7 @@ add_python_extension(_msi
 add_python_extension(msvcrt REQUIRES MSVC BUILTIN SOURCES ${SRC_DIR}/PC/msvcrtmodule.c)
 add_python_extension(nt REQUIRES WIN32 ALWAYS_BUILTIN SOURCES posixmodule.c)
 
-add_python_extension(winreg REQUIRES WIN32 BUILTIN SOURCES ${SRC_DIR}/PC/winreg.c)
+add_python_extension(winreg REQUIRES WIN32 ALWAYS_BUILTIN SOURCES ${SRC_DIR}/PC/winreg.c)
 
 # Python3: Windows-only extensions
 add_python_extension(_overlapped
@@ -781,17 +785,3 @@ else()
         INCLUDEDIRS ${ZLIB_INCLUDE_DIRS}
     )
 endif()
-
-# FIX ME: test code, print all builtin extension source files
-# List of builtin extensions
-get_property(builtin_extensions GLOBAL PROPERTY builtin_extensions)
-
-# Collect builtin extension sources
-set(builtin_extension_sources)
-foreach(name ${builtin_extensions})
-    get_property(extension_${name}_sources GLOBAL PROPERTY extension_${name}_sources)
-    list(APPEND builtin_extension_sources ${extension_${name}_sources})
-endforeach()
-foreach(source_file ${builtin_extension_sources})
-    message(STATUS ${source_file})
-endforeach()
