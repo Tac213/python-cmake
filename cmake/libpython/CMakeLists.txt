@@ -962,6 +962,12 @@ if(NOT BUILD_LIBPYTHON_SHARED)
         PUBLIC
             Py_NO_ENABLE_SHARED
     )
+    if(WIN32)
+        target_compile_definitions(libpython-static
+            PUBLIC
+                MS_COREDLL  # for sysmodule.c, or there will be no sys.winver
+        )
+    endif()
     set_target_properties(libpython-static PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_STATIC_ARCHIVEDIR}
     )

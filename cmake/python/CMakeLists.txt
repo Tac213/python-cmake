@@ -45,6 +45,12 @@ if(WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SRC_DIR}/PC/pyconfig.h ${BIN_BUILD_DIR}/${CMAKE_CFG_INTDIR}/PC/pyconfig.h
         COMMENT "Copying 'pyconfig.h' to '${BIN_INSTALL_DIR}/${CMAKE_CFG_INTDIR}/PC'"
         )
+    if(NOT BUILD_LIBPYTHON_SHARED)
+        install(FILES
+            $<TARGET_RUNTIME_DLLS:python>
+            DESTINATION ${BIN_INSTALL_DIR}
+        )
+    endif()
 endif()
 
 if(UNIX AND PY_VERSION VERSION_GREATER "2.7.4")
