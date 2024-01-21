@@ -812,6 +812,11 @@ endif()
 function(add_libpython name type install component)
     add_library(${name} ${type} ${LIBPYTHON_SOURCES})
     target_link_libraries(${name} ${LIBPYTHON_TARGET_LIBRARIES})
+    target_include_directories(${name}
+        PUBLIC
+            ${SRC_DIR}/Include
+            ${PYCONFIG_BUILD_DIR}
+    )
 
     if(MSVC)
         # Explicitly disable COMDAT folding. Note that this was not required
