@@ -32,7 +32,7 @@ if(UNIX)
         )
 elseif(WIN32)
     set(_win32_getpath_file ${SRC_DIR}/Modules/getpath.c)
-    if(PY_VERSION VERSION_LESS_EQUAL "3.10")
+    if(PY_VERSION VERSION_LESS "3.11")
         set(_win32_getpath_file ${SRC_DIR}/PC/getpathp.c)
         list(APPEND MODULE_SOURCES
             ${_win32_getpath_file}
@@ -153,7 +153,7 @@ if(MSVC)
         ${SRC_DIR}/PC/invalid_parameter_handler.c
     )
 endif()
-if(PY_VERSION VERSION_LESS_EQUAL "3.11")
+if(PY_VERSION VERSION_LESS "3.12")
     list(APPEND OBJECT_SOURCES
         ${SRC_DIR}/Objects/accu.c
     )
@@ -560,7 +560,7 @@ set(LIBPYTHON_FROZEN_SOURCES )
 
 # Build _freeze_module executable
 set(_freeze_module_c ${SRC_DIR}/Programs/_freeze_module.c)
-if(PY_VERSION VERSION_LESS_EQUAL "3.10")
+if(PY_VERSION VERSION_LESS "3.11")
     set(_freeze_module_c ${SRC_DIR}/Programs/_freeze_importlib.c)
 else()
     list(APPEND _freeze_module_c
@@ -590,6 +590,14 @@ target_compile_definitions(_freeze_module
     PUBLIC
         Py_NO_ENABLE_SHARED
 )
+
+if(WIN32 AND (PY_VERSION VERSION_LESS "3.12") AND BUILTIN_MSI)
+    set_property(
+        SOURCE ${SRC_DIR}/PC/_msi.c
+        PROPERTY COMPILE_DEFINITIONS
+            NEEDS_PY_IDENTIFIER
+    )
+endif()
 
 list(APPEND LIBPYTHON_OMIT_FROZEN_SOURCES ${builtin_extension_sources})
 

@@ -68,6 +68,13 @@ string(REGEX REPLACE "[a-z]+[1-9]$" "" _py_version_patch_no_rc ${PY_VERSION_PATC
 set(_py_version_no_rc "${PY_VERSION_MAJOR}.${PY_VERSION_MINOR}.${_py_version_patch_no_rc}")
 set(_download_link "https://www.python.org/ftp/python/${_py_version_no_rc}/Python-${PY_VERSION}.tgz")
 
+set(_download_3.11.0_md5 "c5f77f1ea256dc5bdb0897eeb4d35bb0")
+set(_download_3.11.1_md5 "5c986b2865979b393aa50a31c65b64e8")
+set(_download_3.11.2_md5 "f6b5226ccba5ae1ca9376aaba0b0f673")
+set(_download_3.11.3_md5 "016ba65bc80411f9ec20c614ab385e81")
+set(_download_3.11.4_md5 "bf6ec50f2f3bfa6ffbdb385286f2c628")
+set(_download_3.11.5_md5 "b628f21aae5e2c3006a12380905bb640")
+set(_download_3.11.6_md5 "ed23dadb9f1b9fd2e4e7d78619685c79")
 set(_download_3.11.7_md5 "ef61f81ec82c490484219c7f0ec96783")
 set(_download_3.12.0_md5 "d6eda3e1399cef5dfde7c4f319b0596c")
 set(_download_3.12.1_md5 "51c5c22dcbc698483734dff5c8028606")

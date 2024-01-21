@@ -229,6 +229,13 @@ add_python_extension(_msi
     SOURCES ${SRC_DIR}/PC/_msi.c
     LIBRARIES cabinet.lib msi.lib rpcrt4.lib
 )
+if(WIN32 AND (PY_VERSION VERSION_LESS "3.12") AND NOT BUILTIN_MSI)
+    set_property(
+        SOURCE ${SRC_DIR}/PC/_msi.c
+        PROPERTY COMPILE_DEFINITIONS
+            NEEDS_PY_IDENTIFIER
+    )
+endif()
 add_python_extension(msvcrt REQUIRES MSVC BUILTIN SOURCES ${SRC_DIR}/PC/msvcrtmodule.c)
 add_python_extension(nt REQUIRES WIN32 ALWAYS_BUILTIN SOURCES posixmodule.c)
 
