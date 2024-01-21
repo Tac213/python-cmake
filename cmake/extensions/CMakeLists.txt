@@ -474,16 +474,16 @@ endif()
 if(ENABLE_DECIMAL)
     message(STATUS "extension_decimal: libmpdec_config [${libmpdec_config}]")
 endif()
-# add_python_extension(_decimal
-#     SOURCES
-#         _decimal/_decimal.c
-#         _decimal/docstrings.h
-#         ${_decimal_EXTRA_SOURCES}
-#     DEFINITIONS ${libmpdec_config_${libmpdec_config}}
-#     ${_decimal_REQUIRES}
-#     ${_decimal_LIBRARIES}
-#     ${_decimal_INCLUDEDIRS}
-# )
+add_python_extension(_decimal
+    SOURCES
+        _decimal/_decimal.c
+        _decimal/docstrings.h
+        ${_decimal_EXTRA_SOURCES}
+    DEFINITIONS ${libmpdec_config_${libmpdec_config}}
+    ${_decimal_REQUIRES}
+    ${_decimal_LIBRARIES}
+    ${_decimal_INCLUDEDIRS}
+)
 if(_decimal_compile_flags AND ENABLE_DECIMAL AND NOT BUILTIN_DECIMAL)
     set_target_properties(extension_decimal PROPERTIES COMPILE_FLAGS ${_decimal_compile_flags})
 endif()

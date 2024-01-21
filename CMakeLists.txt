@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13.5)
+cmake_minimum_required(VERSION 3.21)
 
 set(PYTHON_VERSION "3.12.1" CACHE STRING "The version of Python to build.")
 
@@ -127,7 +127,11 @@ if(NOT "${PYTHON_VERSION}" STREQUAL "${PY_VERSION}")
     set(PYTHON_VERSION "${PY_VERSION}" CACHE STRING "The version of Python to build." FORCE)
 endif()
 
-# TODO: Apply patches
+# Apply patches
+option(PYTHON_APPLY_PATCHES "Apply patches" ON)
+if(PYTHON_APPLY_PATCHES)
+    include(cmake/PythonApplyPatches.cmake)
+endif()
 
 # Convenience boolean variables to easily test python version
 set(IS_PY3 0)

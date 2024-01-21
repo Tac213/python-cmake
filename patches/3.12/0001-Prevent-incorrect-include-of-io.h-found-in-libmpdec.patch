@@ -1,0 +1,31 @@
+From 40c76279e5bb3345d9e6a6e5f41d275571c9acbf Mon Sep 17 00:00:00 2001
+From: Tac Uchiha <cookiezhx@163.com>
+Date: Sun, 21 Jan 2024 14:12:15 +0800
+Subject: [PATCH] Prevent incorrect include of io.h found in libmpdec
+
+---
+ Modules/_decimal/libmpdec/io.c               | 2 +-
+ Modules/_decimal/libmpdec/{io.h => mpd_io.h} | 0
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ rename Modules/_decimal/libmpdec/{io.h => mpd_io.h} (100%)
+
+diff --git a/Modules/_decimal/libmpdec/io.c b/Modules/_decimal/libmpdec/io.c
+index e7bd6ae..ecebe82 100644
+--- a/Modules/_decimal/libmpdec/io.c
++++ b/Modules/_decimal/libmpdec/io.c
+@@ -37,7 +37,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#include "io.h"
++#include "mpd_io.h"
+ #include "typearith.h"
+ 
+ 
+diff --git a/Modules/_decimal/libmpdec/io.h b/Modules/_decimal/libmpdec/mpd_io.h
+similarity index 100%
+rename from Modules/_decimal/libmpdec/io.h
+rename to Modules/_decimal/libmpdec/mpd_io.h
+-- 
+2.32.0.windows.2
+
