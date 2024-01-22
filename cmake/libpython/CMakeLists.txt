@@ -848,31 +848,7 @@ function(add_libpython name type install component)
     endif()
 endfunction()
 
-if(BUILD_LIBPYTHON_SHARED)
-    add_libpython(libpython-shared SHARED 1 Runtime)
-    if(${WIN32})
-        add_custom_command(TARGET libpython-shared POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:libpython-shared> $<TARGET_FILE_DIR:libpython-shared>
-            COMMAND_EXPAND_LISTS
-        )
-        install(FILES
-            $<TARGET_RUNTIME_DLLS:libpython-shared>
-            DESTINATION ${LIBPYTHON_LIBDIR}
-        )
-    endif()
-    set_target_properties(libpython-shared PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_ARCHIVEDIR}
-    )
-    if(APPLE)
-        # HACK For python <= 2.7.3, this fix link error related to undefined _environ symbol and
-        #      is equivalent to solution implemented in commit http://hg.python.org/cpython/rev/864b983
-        #      The property is set here because source file properties can't be in one directory
-        #      and used to build a target in an other directory.
-        set_property(
-            SOURCE ${SRC_DIR}/Modules/posixmodule.c
-            APPEND PROPERTY COMPILE_DEFINITIONS WITH_NEXT_FRAMEWORK)
-    endif()
-
+function(add_libpython3 libpython_name)
     set(targetname "libpython3-shared")
 
     if(MSVC)
@@ -942,7 +918,7 @@ if(BUILD_LIBPYTHON_SHARED)
                 RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR}
                 INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/${LIBPYTHON_LIBDIR}
             )
-            add_dependencies(${targetname} libpython-shared generate_libpython3stub_lib)
+            add_dependencies(${targetname} ${libpython_name} generate_libpython3stub_lib)
 
             target_link_libraries(${targetname} ${python3stub_lib})
         endif()  # PY_VERSION < 3.10
@@ -957,8 +933,42 @@ if(BUILD_LIBPYTHON_SHARED)
             RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR}
             INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/${LIBPYTHON_LIBDIR}
         )
-        target_link_libraries(${targetname} libpython-shared)
+        target_link_libraries(${targetname} ${libpython_name})
     endif()
+    install(TARGETS ${targetname} EXPORT PythonTargets
+        ARCHIVE DESTINATION ${LIBPYTHON_ARCHIVEDIR}
+        LIBRARY DESTINATION ${LIBPYTHON_LIBDIR}
+        RUNTIME DESTINATION ${LIBPYTHON_LIBDIR}
+        COMPONENT Runtime
+    )
+endfunction()
+
+if(BUILD_LIBPYTHON_SHARED)
+    add_libpython(libpython-shared SHARED 1 Runtime)
+    if(${WIN32})
+        add_custom_command(TARGET libpython-shared POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:libpython-shared> $<TARGET_FILE_DIR:libpython-shared>
+            COMMAND_EXPAND_LISTS
+        )
+        install(FILES
+            $<TARGET_RUNTIME_DLLS:libpython-shared>
+            DESTINATION ${LIBPYTHON_LIBDIR}
+        )
+    endif()
+    set_target_properties(libpython-shared PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_ARCHIVEDIR}
+    )
+    if(APPLE)
+        # HACK For python <= 2.7.3, this fix link error related to undefined _environ symbol and
+        #      is equivalent to solution implemented in commit http://hg.python.org/cpython/rev/864b983
+        #      The property is set here because source file properties can't be in one directory
+        #      and used to build a target in an other directory.
+        set_property(
+            SOURCE ${SRC_DIR}/Modules/posixmodule.c
+            APPEND PROPERTY COMPILE_DEFINITIONS WITH_NEXT_FRAMEWORK)
+    endif()
+
+    add_libpython3(libpython-shared)
 endif()  # BUILD_LIBPYTHON_SHARED
 
 if(NOT BUILD_LIBPYTHON_SHARED)
