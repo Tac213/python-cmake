@@ -306,8 +306,8 @@ if(WIN32)
         REQUIRES HAVE_LIBM
         SOURCES ${_socket_SOURCES}
         DEFINITIONS EAI_ADDRFAMILY
-                    HAVE_SOCKADDR_STORAGE
-                    HAVE_ADDRINFO
+                    # HAVE_SOCKADDR_STORAGE
+                    # HAVE_ADDRINFO
         LIBRARIES ws2_32 ${M_LIBRARIES} $<$<VERSION_GREATER_EQUAL:${PY_VERSION},3.8>:iphlpapi>
     )
 else()

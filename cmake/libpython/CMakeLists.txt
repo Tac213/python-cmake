@@ -38,8 +38,12 @@ elseif(WIN32)
             ${_win32_getpath_file}
         )
     endif()
-    add_definitions(-DPY3_DLLNAME="${PY3_DLLNAME}")
-    add_definitions(-DPYTHON_DLL_NAME="python${PY_VERSION_MAJOR}${PY_VERSION_MINOR}")
+    add_definitions("-DPY3_DLLNAME=L\"${PY3_DLLNAME}\"")
+    if(NOT BUILD_LIBPYTHON_SHARED AND WIN32_EMBEDED_APPLICATION_NAME AND WIN32_EMBEDED_APPLICATION_NAME MATCHES "\\.exe$")
+        add_definitions(-DPYTHON_DLL_NAME="${WIN32_EMBEDED_APPLICATION_NAME}")
+    else()
+        add_definitions(-DPYTHON_DLL_NAME="python${PY_VERSION_MAJOR}${PY_VERSION_MINOR}")
+    endif()
     # HACK To workaround limitation in escaping logic of CMake, the pythonpath
     #      separator is conditionally set depending of the version of Visual Studio.
     #      See http://cmake.org/Bug/view.php?id=14073
@@ -71,7 +75,7 @@ elseif(WIN32)
         PROPERTY COMPILE_DEFINITIONS
             "LANDMARK=${_wide_char_modifier}\"${PYTHONHOME_ESCAPED}\\\\os.py\""
             "PYTHONPATH=${_wide_char_modifier}\"${PYTHONPATH}\""
-            "PY3_DLLNAME=\"${PY3_DLLNAME}\""
+            "PY3_DLLNAME=${_wide_char_modifier}\"${PY3_DLLNAME}\""
     )
     if(PY_VERSION VERSION_GREATER_EQUAL "3.10")
         set_property(
@@ -935,6 +939,15 @@ function(add_libpython3 libpython_name)
         )
         target_link_libraries(${targetname} ${libpython_name})
     endif()
+    # set_target_properties(${targetname} PROPERTIES
+    #     OUTPUT_NAME "python3"
+    #     LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR}
+    #     RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR}
+    #     INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/${LIBPYTHON_LIBDIR}
+    # )
+    # set_target_properties(${targetname} PROPERTIES
+    #     POSITION_INDEPENDENT_CODE ON
+    # )
     install(TARGETS ${targetname} EXPORT PythonTargets
         ARCHIVE DESTINATION ${LIBPYTHON_ARCHIVEDIR}
         LIBRARY DESTINATION ${LIBPYTHON_LIBDIR}
@@ -991,4 +1004,6 @@ if(NOT BUILD_LIBPYTHON_SHARED)
             ARCHIVE DESTINATION ${PYTHONHOME}/config/
             COMPONENT Development)
     endif()
+
+    add_libpython3(libpython-static)
 endif()  # NOT BUILD_LIBPYTHON_SHARED
