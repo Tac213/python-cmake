@@ -11,6 +11,7 @@ set(PY_VERSION "${PY_VERSION_MAJOR}.${PY_VERSION_MINOR}.${PY_VERSION_PATCH}")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_CONFIGURATION_TYPES Release CACHE STRING "Release configuration" FORCE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release")
 endif()
@@ -44,18 +45,19 @@ macro(append_if_absent VARNAME VALUE)
     endif()
 endmacro()
 
-
 set(Py_DEBUG OFF)
 set(WITH_DOC_STRINGS 1)
 set(WITH_PYMALLOC 1)
 
 # Detect source directory
 set(_landmark "pyconfig.h.in") # CMake will look for this file.
-if(NOT (SRC_DIR AND EXISTS ${SRC_DIR}/${_landmark}))
+
+if(NOT(SRC_DIR AND EXISTS ${SRC_DIR}/${_landmark}))
     foreach(dirname
         ${CMAKE_CURRENT_SOURCE_DIR}/cpython-${PY_VERSION}
         ${CMAKE_CURRENT_SOURCE_DIR}/Python-${PY_VERSION})
         set(SRC_DIR ${dirname})
+
         if(EXISTS ${SRC_DIR}/${_landmark})
             break()
         endif()
@@ -84,28 +86,33 @@ set(_extracted_dir "Python-${PY_VERSION}")
 if(NOT EXISTS ${SRC_DIR}/${_landmark})
     get_filename_component(_filename ${_download_link} NAME)
     set(_archive_filepath ${CMAKE_CURRENT_SOURCE_DIR}/${_filename})
+
     if(EXISTS "${_archive_filepath}")
         message(STATUS "${_filename} already downloaded")
     else()
         message(STATUS "Downloading ${_download_link}")
+
         if(NOT DEFINED _download_${PY_VERSION}_md5)
             message(FATAL_ERROR "Selected PY_VERSION [${PY_VERSION}] is not associated with any checksum. Consider updating this CMakeLists.txt setting _download_${PY_VERSION}_md5 variable")
         endif()
+
         file(
-          DOWNLOAD ${_download_link} ${_archive_filepath}
-          EXPECTED_MD5 ${_download_${PY_VERSION}_md5}
-          SHOW_PROGRESS
-          )
+            DOWNLOAD ${_download_link} ${_archive_filepath}
+            EXPECTED_MD5 ${_download_${PY_VERSION}_md5}
+            SHOW_PROGRESS
+        )
     endif()
 
     message(STATUS "Extracting ${_filename}")
     execute_process(COMMAND ${CMAKE_COMMAND} -E tar xfz ${_archive_filepath}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         RESULT_VARIABLE rv)
+
     if(NOT rv EQUAL 0)
         message(FATAL_ERROR "error: extraction of '${_filename}' failed")
         file(REMOVE ${_archive_filepath})
     endif()
+
     set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${_extracted_dir})
     file(REMOVE ${_archive_filepath})
 endif()
@@ -116,7 +123,7 @@ message(STATUS "SRC_DIR: ${SRC_DIR}")
 file(STRINGS "${SRC_DIR}/Include/patchlevel.h" python_version_str
     REGEX "^#define[ \t]+PY_VERSION[ \t]+\"[^\"]+\"")
 string(REGEX REPLACE "^#define[ \t]+PY_VERSION[ \t]+\"([^\"]+)\".*" "\\1"
-      PY_VERSION_LONG "${python_version_str}")
+    PY_VERSION_LONG "${python_version_str}")
 
 include(cmake/PythonExtractVersionInfo.cmake)
 python_extract_version_info(
@@ -129,6 +136,7 @@ message(STATUS "PY_VERSION_LONG: ${PY_VERSION_LONG}")
 if(NOT DEFINED _download_${PY_VERSION_LONG}_md5)
     message(WARNING "warning: selected python version '${PY_VERSION_LONG}' is not tested. Tested versions match '2.7.[3-14]' or '3.5.[1-5]' or `3.6.[0-4]`")
 endif()
+
 if(NOT "${PYTHON_VERSION}" STREQUAL "${PY_VERSION}")
     message(STATUS "Overwriting PYTHON_VERSION with value read from 'patchlevel.h': ${PYTHON_VERSION} -> ${PY_VERSION}")
     set(PYTHON_VERSION "${PY_VERSION}" CACHE STRING "The version of Python to build." FORCE)
@@ -136,6 +144,7 @@ endif()
 
 # Apply patches
 option(PYTHON_APPLY_PATCHES "Apply patches" ON)
+
 if(PYTHON_APPLY_PATCHES)
     include(cmake/PythonApplyPatches.cmake)
 endif()
@@ -143,18 +152,21 @@ endif()
 # Convenience boolean variables to easily test python version
 set(IS_PY3 0)
 set(IS_PY2 1)
+
 if(PY_VERSION_MAJOR VERSION_GREATER 2)
     set(IS_PY3 1)
     set(IS_PY2 0)
 endif()
 
 set(PY3_DLLNAME python3)
+
 if(Py_DEBUG)
     set(PY3_DLLNAME ${PY3_DLLNAME}_d)
 endif()
 
 if(WIN32)
     enable_language(CXX)
+
     if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
         enable_language(ASM_MASM)
     endif()
@@ -162,9 +174,11 @@ endif()
 
 # This is the major version number of Python
 set(LIBPYTHON_VERSION ${PY_VERSION_MAJOR}.${PY_VERSION_MINOR})
+
 if(WIN32)
     set(LIBPYTHON_VERSION ${PY_VERSION_MAJOR}${PY_VERSION_MINOR})
 endif()
+
 set(LIBPYTHON python${LIBPYTHON_VERSION})
 
 # Proceed to the configure checks
@@ -172,21 +186,25 @@ include(cmake/ConfigureChecks.cmake)
 
 # Set PYTHONHOME
 set(LIBDIR "Lib") # See Lib/distutils/sysconfig.py - function 'get_python_lib'
+
 if(UNIX)
     set(LIBDIR "lib")
 endif()
+
 set(PYTHONHOME "${LIBDIR}")
+
 if(UNIX)
     set(PYTHONHOME "${PYTHONHOME}/${LIBPYTHON}")
 endif()
 
 # Install tree directory
-set(BIN_INSTALL_DIR bin)                         # Contains the python executable
+set(BIN_INSTALL_DIR bin) # Contains the python executable
 set(LD_VERSION ${LIBPYTHON_VERSION}${ABIFLAGS})
 set(CONFIG_INSTALL_DIR share/${LIBPYTHON})
 set(EXTENSION_INSTALL_DIR ${PYTHONHOME}/lib-dynload)
 set(LIB_CONFIG_INSTALL_DIR ${PYTHONHOME}/config-${LD_VERSION})
 set(INCLUDE_INSTALL_DIR include/python${LD_VERSION})
+
 if(WIN32)
     set(INCLUDE_INSTALL_DIR include)
 endif()
@@ -197,12 +215,13 @@ set(CONFIG_BUILD_DIR ${PROJECT_BINARY_DIR}/${CONFIG_INSTALL_DIR})
 set(EXTENSION_BUILD_DIR ${PROJECT_BINARY_DIR}/${PYTHONHOME}/lib-dynload)
 set(INCLUDE_BUILD_DIR ${SRC_DIR}/Include)
 
-set(ARCHIVEDIR "libs")      # Contains the static (*.a) and import libraries (*.lib)
+set(ARCHIVEDIR "libs") # Contains the static (*.a) and import libraries (*.lib)
 
 # Directories specific to 'libpython'
 set(LIBPYTHON_LIBDIR ${LIBDIR})
 set(LIBPYTHON_ARCHIVEDIR ${LIBDIR})
 set(LIBPYTHON_STATIC_ARCHIVEDIR ${LIBDIR})
+
 if(WIN32)
     set(LIBPYTHON_LIBDIR ${BIN_INSTALL_DIR})
     set(LIBPYTHON_ARCHIVEDIR ${ARCHIVEDIR})
@@ -216,19 +235,20 @@ set(EXTRA_PYTHONPATH "" CACHE STRING
 if(UNIX)
     set(PYCONFIG_BUILD_DIR ${BIN_BUILD_DIR})
     configure_file(cmake/config-unix/pyconfig.h.in
-                   ${PYCONFIG_BUILD_DIR}/pyconfig.h)
+        ${PYCONFIG_BUILD_DIR}/pyconfig.h)
 elseif(WIN32)
     set(PYCONFIG_BUILD_DIR ${SRC_DIR}/PC) # In a windows build tree, 'pyconfig.h' is NOT required to
-                                          # live along side the python executable.
-                                          # See function '_init_posix()' and '_init_non_posix()'
-                                          # in 'Lib/sysconfig.py'
+
+    # live along side the python executable.
+    # See function '_init_posix()' and '_init_non_posix()'
+    # in 'Lib/sysconfig.py'
 endif()
 
 # Install 'pyconfig.h'
 if(INSTALL_DEVELOPMENT)
     install(FILES ${PYCONFIG_BUILD_DIR}/pyconfig.h
-            DESTINATION ${INCLUDE_INSTALL_DIR}/
-            COMPONENT Development)
+        DESTINATION ${INCLUDE_INSTALL_DIR}/
+        COMPONENT Development)
 endif()
 
 # Set include directories
@@ -239,9 +259,12 @@ include_directories(${SRC_DIR}/Python)
 
 # Set cflags used by all components
 if(CMAKE_C_COMPILER_ID MATCHES GNU)
-    if(PY_VERSION VERSION_GREATER_EQUAL "3.6")
+    if((PY_VERSION VERSION_GREATER_EQUAL "3.6") AND(PY_VERSION VERSION_LESS "3.11"))
         append_if_absent(CMAKE_C_FLAGS "-std=c99")
+    elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+        append_if_absent(CMAKE_C_FLAGS "-std=c11")
     endif()
+
     append_if_absent(CMAKE_C_FLAGS "-Wall")
     append_if_absent(CMAKE_C_FLAGS "-Wstrict-prototypes")
     append_if_absent(CMAKE_C_FLAGS "-fno-strict-aliasing")
@@ -275,12 +298,15 @@ file(WRITE ${CONFIG_BUILD_DIR}/PythonTargets.cmake "")
 
 # Define python executable wrapper command to ensure
 # python executable resolves the expected python library.
-set(PYTHON_WRAPPER_COMMAND )
+set(PYTHON_WRAPPER_COMMAND)
+
 if(BUILD_LIBPYTHON_SHARED AND UNIX)
     set(_envvar LD_LIBRARY_PATH)
+
     if(APPLE)
         set(_envvar DYLD_LIBRARY_PATH)
     endif()
+
     set(PYTHON_WRAPPER_COMMAND env ${_envvar}=${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR})
 endif()
 
@@ -311,18 +337,19 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
 else()
     set(generate_graminit_command $<TARGET_FILE:pgen>)
 endif()
+
 add_custom_target(generate_graminit
     COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${generate_graminit_command}
-        ${SRC_DIR}/Grammar/Grammar
-        $<$<VERSION_GREATER_EQUAL:${PY_VERSION},3.8>:${SRC_DIR}/Grammar/Tokens>
-        ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.h
-        ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.c
+    ${SRC_DIR}/Grammar/Grammar
+    $<$<VERSION_GREATER_EQUAL:${PY_VERSION},3.8>:${SRC_DIR}/Grammar/Tokens>
+    ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.h
+    ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.c
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.h
-        ${SRC_DIR}/Include/graminit.h
+    ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.h
+    ${SRC_DIR}/Include/graminit.h
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.c
-        ${SRC_DIR}/Python/graminit.c
+    ${PROJECT_BINARY_DIR}/CMakeFiles/graminit.c
+    ${SRC_DIR}/Python/graminit.c
     DEPENDS $<IF:$<VERSION_GREATER_EQUAL:${PY_VERSION},3.8>,python,pgen>
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMENT "Generating '${SRC_DIR}/Include/graminit.h' and '${SRC_DIR}/Python/graminit.c'."
@@ -333,13 +360,13 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.9")
     # Add target to generate `Tools/peg_generator/pegen/grammar_parser.py`
     add_custom_target(generate_pegen_metaparser
         COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${SRC_DIR}/Tools/peg_generator
-            ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> -m pegen
-                -q python
-                ${SRC_DIR}/Tools/peg_generator/pegen/metagrammar.gram
-                -o ${PROJECT_BINARY_DIR}/CMakeFiles/grammar_parser.py
+        ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> -m pegen
+        -q python
+        ${SRC_DIR}/Tools/peg_generator/pegen/metagrammar.gram
+        -o ${PROJECT_BINARY_DIR}/CMakeFiles/grammar_parser.py
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${PROJECT_BINARY_DIR}/CMakeFiles/grammar_parser.py
-            ${SRC_DIR}/Tools/peg_generator/pegen/grammar_parser.py
+        ${PROJECT_BINARY_DIR}/CMakeFiles/grammar_parser.py
+        ${SRC_DIR}/Tools/peg_generator/pegen/grammar_parser.py
         DEPENDS python
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
         COMMENT "Generating '${SRC_DIR}/Tools/peg_generator/pegen/grammar_parser.py'"
@@ -349,29 +376,29 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.9")
     # Add target to generate `Parser/pegen/parse.c`
     add_custom_target(generate_pegen_parse
         COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${SRC_DIR}/Tools/peg_generator
-            ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> -m pegen
-                -q c
-                ${SRC_DIR}/Grammar/python.gram
-                ${SRC_DIR}/Grammar/Tokens
-                -o ${PROJECT_BINARY_DIR}/CMakeFiles/parse.c
+        ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> -m pegen
+        -q c
+        ${SRC_DIR}/Grammar/python.gram
+        ${SRC_DIR}/Grammar/Tokens
+        -o ${PROJECT_BINARY_DIR}/CMakeFiles/parse.c
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${PROJECT_BINARY_DIR}/CMakeFiles/parse.c
-            ${SRC_DIR}/Parser/pegen/parse.c
+        ${PROJECT_BINARY_DIR}/CMakeFiles/parse.c
+        ${SRC_DIR}/Parser/pegen/parse.c
         DEPENDS python
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
         COMMENT "Generating '${SRC_DIR}/Parser/pegen/parse.c'"
         VERBATIM
     )
-endif()  # PY_VERSION >= 3.9
+endif() # PY_VERSION >= 3.9
 
 # Add target to generate 'opcode.h' header file
 add_custom_target(generate_opcode_h
     COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> ${SRC_DIR}/Tools/scripts/generate_opcode_h.py
-        ${SRC_DIR}/Lib/opcode.py
-        ${PROJECT_BINARY_DIR}/CMakeFiles/opcode.h
+    ${SRC_DIR}/Lib/opcode.py
+    ${PROJECT_BINARY_DIR}/CMakeFiles/opcode.h
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${PROJECT_BINARY_DIR}/CMakeFiles/opcode.h
-        ${SRC_DIR}/Include/opcode.h
+    ${PROJECT_BINARY_DIR}/CMakeFiles/opcode.h
+    ${SRC_DIR}/Include/opcode.h
     DEPENDS python
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMENT "Generating '${SRC_DIR}/Include/opcode.h'."
@@ -381,8 +408,8 @@ add_custom_target(generate_opcode_h
 # Add target to generate 'Include/Python-ast.h' from 'Python.asdl'
 add_custom_target(generate_python_ast_h
     COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> ${SRC_DIR}/Parser/asdl_c.py
-        -h ${SRC_DIR}/Include
-        ${SRC_DIR}/Parser/Python.asdl
+    -h ${SRC_DIR}/Include
+    ${SRC_DIR}/Parser/Python.asdl
     DEPENDS python
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMENT "Generating '${SRC_DIR}/Include/Python-ast.h'"
@@ -392,8 +419,8 @@ add_custom_target(generate_python_ast_h
 # Add target to generate 'Python/Python-ast.c' from 'Python.asdl'
 add_custom_target(generate_python_ast_c
     COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:python> ${SRC_DIR}/Parser/asdl_c.py
-        -c ${SRC_DIR}/Python
-        ${SRC_DIR}/Parser/Python.asdl
+    -c ${SRC_DIR}/Python
+    ${SRC_DIR}/Parser/Python.asdl
     DEPENDS python
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
     COMMENT "Generating '${SRC_DIR}/Python/Python-ast.c'"
@@ -402,9 +429,11 @@ add_custom_target(generate_python_ast_c
 
 # If needed, copy 'asdl.py' and 'Python.asdl' into build directory so that 'test_asdl_parser' passes.
 set(_asdl_subdir ${LIBDIR})
+
 if(WIN32)
-    set(_asdl_subdir )
+    set(_asdl_subdir)
 endif()
+
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBDIR}/Parser)
 configure_file(
     ${SRC_DIR}/Parser/Python.asdl
@@ -422,39 +451,43 @@ show_extension_summary()
 if(UNIX)
     # python.pc
     configure_file(cmake/python.pc.in
-                  ${PROJECT_BINARY_DIR}/Misc/python-${LIBPYTHON_VERSION}.pc @ONLY)
+        ${PROJECT_BINARY_DIR}/Misc/python-${LIBPYTHON_VERSION}.pc @ONLY)
     configure_file(cmake/python.pc.in
-                  ${PROJECT_BINARY_DIR}/Misc/python-${PY_VERSION_MAJOR}.pc @ONLY)
+        ${PROJECT_BINARY_DIR}/Misc/python-${PY_VERSION_MAJOR}.pc @ONLY)
     configure_file(cmake/python.pc.in
-                  ${PROJECT_BINARY_DIR}/Misc/python.pc @ONLY)
+        ${PROJECT_BINARY_DIR}/Misc/python.pc @ONLY)
+
     if(INSTALL_DEVELOPMENT)
         install(FILES
-                    ${PROJECT_BINARY_DIR}/Misc/python-${LIBPYTHON_VERSION}.pc
-                    ${PROJECT_BINARY_DIR}/Misc/python-${PY_VERSION_MAJOR}.pc
-                    ${PROJECT_BINARY_DIR}/Misc/python.pc
-                DESTINATION lib/pkgconfig
-                COMPONENT Development)
+            ${PROJECT_BINARY_DIR}/Misc/python-${LIBPYTHON_VERSION}.pc
+            ${PROJECT_BINARY_DIR}/Misc/python-${PY_VERSION_MAJOR}.pc
+            ${PROJECT_BINARY_DIR}/Misc/python.pc
+            DESTINATION lib/pkgconfig
+            COMPONENT Development)
     endif()
 
     # Makefile
     set(MAKEFILE_LDSHARED_FLAGS "-shared")
+
     if(APPLE)
         set(MAKEFILE_LDSHARED_FLAGS "-dynamiclib -headerpad_max_install_names -undefined dynamic_lookup")
     endif()
+
     configure_file(cmake/makefile-variables.in
-                   ${BIN_BUILD_DIR}/Makefile @ONLY)
+        ${BIN_BUILD_DIR}/Makefile @ONLY)
+
     if(INSTALL_DEVELOPMENT)
         install(FILES ${BIN_BUILD_DIR}/Makefile
-                DESTINATION ${LIB_CONFIG_INSTALL_DIR}
-                RENAME Makefile
-                COMPONENT Development)
+            DESTINATION ${LIB_CONFIG_INSTALL_DIR}
+            RENAME Makefile
+            COMPONENT Development)
     endif()
 
     # Utility scripts
     if(INSTALL_DEVELOPMENT)
         install(FILES ${SRC_DIR}/install-sh ${SRC_DIR}/Modules/makesetup
-                DESTINATION ${LIB_CONFIG_INSTALL_DIR}
-                COMPONENT Development)
+            DESTINATION ${LIB_CONFIG_INSTALL_DIR}
+            COMPONENT Development)
     endif()
 
     # Install manual
@@ -463,7 +496,6 @@ if(UNIX)
         install(${_install_man} RENAME python${LIBPYTHON_VERSION}.1)
         install(${_install_man} RENAME python${PY_VERSION_MAJOR}.1)
     endif()
-
 endif()
 
 # Create an empty lib-dynload folder, even if we don't have any extensions
@@ -516,9 +548,8 @@ write_basic_package_version_file(
 if(INSTALL_DEVELOPMENT)
     # Install 'PythonTargets.cmake', 'PythonConfig.cmake' and 'PythonConfigVersion.cmake
     # install(EXPORT PythonTargets
-    #     FILE PythonTargets.cmake
-    #     DESTINATION ${CONFIG_INSTALL_DIR} COMPONENT Development)
-
+    # FILE PythonTargets.cmake
+    # DESTINATION ${CONFIG_INSTALL_DIR} COMPONENT Development)
     install(
         FILES ${python_install_config} ${python_config_version}
         DESTINATION ${CONFIG_INSTALL_DIR} COMPONENT Development)
