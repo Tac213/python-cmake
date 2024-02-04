@@ -25,6 +25,8 @@ where
 
 Before being applied, patches are sorted alphabetically. This ensures that patch starting with 0001- is applied before the one starting with 0002-.
 
+If there is a pair of square brackets in the patch file name, it means that the patch need an extra option to be applied, where the option name is the string within the square brackets.
+
 ## How to generate patches
 
 Simplest way:

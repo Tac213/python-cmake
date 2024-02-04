@@ -1,0 +1,27 @@
+From e592f8e6bcf6485a9ee07f1b0dc2decbf685ecc2 Mon Sep 17 00:00:00 2001
+From: Tac Uchiha <cookiezhx@163.com>
+Date: Mon, 5 Feb 2024 00:07:36 +0800
+Subject: [PATCH] Enable extension loading on win32 with libpython-static
+
+---
+ Include/exports.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Include/exports.h b/Include/exports.h
+index 59373c3..c05b38b 100644
+--- a/Include/exports.h
++++ b/Include/exports.h
+@@ -7,8 +7,8 @@
+         #define Py_EXPORTED_SYMBOL __declspec(dllexport)
+         #define Py_LOCAL_SYMBOL
+     #else
+-        #define Py_IMPORTED_SYMBOL
+-        #define Py_EXPORTED_SYMBOL
++        #define Py_IMPORTED_SYMBOL __declspec(dllimport)
++        #define Py_EXPORTED_SYMBOL __declspec(dllexport)
+         #define Py_LOCAL_SYMBOL
+     #endif
+ #else
+-- 
+2.43.0.windows.1
+
