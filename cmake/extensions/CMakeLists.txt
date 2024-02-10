@@ -24,12 +24,12 @@ add_python_extension(_codecs_iso2022 ${WIN32_BUILTIN} SOURCES cjkcodecs/_codecs_
 add_python_extension(_codecs_jp ${WIN32_BUILTIN} SOURCES cjkcodecs/_codecs_jp.c)
 add_python_extension(_codecs_kr ${WIN32_BUILTIN} SOURCES cjkcodecs/_codecs_kr.c)
 add_python_extension(_codecs_tw ${WIN32_BUILTIN} SOURCES cjkcodecs/_codecs_tw.c)
-add_python_extension(_collections ${WIN32_BUILTIN} ${PY3_BUILTIN} SOURCES _collectionsmodule.c) # Container types
+add_python_extension(_collections ${WIN32_BUILTIN} ${PY3_ALWAYS_BUILTIN} SOURCES _collectionsmodule.c) # Container types
 add_python_extension(_crypt REQUIRES HAVE_LIBCRYPT SOURCES _cryptmodule.c LIBRARIES ${HAVE_LIBCRYPT})
 add_python_extension(_csv ${WIN32_BUILTIN} SOURCES _csv.c)
 # add_python_extension(_ctypes_test NEVER_BUILTIN REQUIRES HAVE_LIBM SOURCES _ctypes/_ctypes_test.c LIBRARIES ${M_LIBRARIES})
 add_python_extension(_datetime ${WIN32_BUILTIN} REQUIRES HAVE_LIBM SOURCES _datetimemodule.c LIBRARIES ${M_LIBRARIES})
-add_python_extension(_functools ${WIN32_BUILTIN} ${PY3_BUILTIN} SOURCES _functoolsmodule.c DEFINITIONS Py_BUILD_CORE) # Tools for working with functions and callable objects
+add_python_extension(_functools ${WIN32_BUILTIN} ${PY3_ALWAYS_BUILTIN} SOURCES _functoolsmodule.c DEFINITIONS Py_BUILD_CORE) # Tools for working with functions and callable objects
 add_python_extension(_heapq ${WIN32_BUILTIN} SOURCES _heapqmodule.c)
 
 set(_io_SOURCES
@@ -48,9 +48,9 @@ if(WIN32 AND EXISTS ${SRC_DIR}/Modules/_io/winconsoleio.c)
 endif()
 add_python_extension(_io ${WIN32_BUILTIN} ${PY3_ALWAYS_BUILTIN} SOURCES ${_io_SOURCES} DEFINITIONS Py_BUILD_CORE)
 
-add_python_extension(itertools ${WIN32_BUILTIN} ${PY3_BUILTIN} SOURCES itertoolsmodule.c) # Functions creating iterators for efficient looping
+add_python_extension(itertools ${WIN32_BUILTIN} ${PY3_ALWAYS_BUILTIN} SOURCES itertoolsmodule.c) # Functions creating iterators for efficient looping
 add_python_extension(_json ${WIN32_BUILTIN} SOURCES _json.c)
-add_python_extension(_locale ${WIN32_BUILTIN} ${PY3_BUILTIN} SOURCES _localemodule.c) # access to ISO C locale support
+add_python_extension(_locale ${WIN32_BUILTIN} ${PY3_ALWAYS_BUILTIN} SOURCES _localemodule.c) # access to ISO C locale support
 add_python_extension(_lsprof ${WIN32_BUILTIN} SOURCES _lsprof.c rotatingtree.c)
 if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
     add_python_extension(math ${WIN32_BUILTIN} REQUIRES HAVE_LIBM SOURCES mathmodule.c LIBRARIES ${M_LIBRARIES})
@@ -75,18 +75,18 @@ add_python_extension(time ${WIN32_BUILTIN} ${PY3_ALWAYS_BUILTIN} REQUIRES HAVE_L
 add_python_extension(unicodedata SOURCES unicodedata.c)
 
 add_python_extension(atexit ALWAYS_BUILTIN REQUIRES IS_PY3 SOURCES atexitmodule.c) # Register functions to be run at interpreter-shutdown
-add_python_extension(_codecs BUILTIN SOURCES _codecsmodule.c) # access to the builtin codecs and codec registry
+add_python_extension(_codecs ALWAYS_BUILTIN SOURCES _codecsmodule.c) # access to the builtin codecs and codec registry
 add_python_extension(faulthandler ALWAYS_BUILTIN REQUIRES IS_PY3 SOURCES faulthandler.c)
 add_python_extension(_opcode ${WIN32_BUILTIN} REQUIRES IS_PY3 SOURCES _opcode.c)
-add_python_extension(_operator BUILTIN REQUIRES IS_PY3 SOURCES _operator.c)
+add_python_extension(_operator ALWAYS_BUILTIN REQUIRES IS_PY3 SOURCES _operator.c)
 add_python_extension(_pickle ${WIN32_BUILTIN} REQUIRES IS_PY3 SOURCES _pickle.c)
 if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
-    add_python_extension(_sre BUILTIN SOURCES _sre/sre.c) # Fredrik Lundh's new regular expressions
+    add_python_extension(_sre ALWAYS_BUILTIN SOURCES _sre/sre.c) # Fredrik Lundh's new regular expressions
 else()
-    add_python_extension(_sre BUILTIN SOURCES _sre.c) # Fredrik Lundh's new regular expressions
+    add_python_extension(_sre ALWAYS_BUILTIN SOURCES _sre.c) # Fredrik Lundh's new regular expressions
 endif()
-add_python_extension(_stat BUILTIN REQUIRES IS_PY3 SOURCES _stat.c) # stat.h interface
-add_python_extension(_symtable BUILTIN SOURCES symtablemodule.c)
+add_python_extension(_stat ALWAYS_BUILTIN REQUIRES IS_PY3 SOURCES _stat.c) # stat.h interface
+add_python_extension(_symtable ALWAYS_BUILTIN SOURCES symtablemodule.c)
 # Python PEP-3118 (buffer protocol) test module
 add_python_extension(_testbuffer REQUIRES IS_PY3 SOURCES _testbuffer.c)
 # Test loading multiple modules from one compiled file (http://bugs.python.org/issue16421)
@@ -142,7 +142,7 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.6")
 endif()
 
 if(PY_VERSION VERSION_GREATER_EQUAL "3.7")
-    add_python_extension(_abc BUILTIN SOURCES _abc.c)
+    add_python_extension(_abc ALWAYS_BUILTIN SOURCES _abc.c)
     add_python_extension(_contextvars ${WIN32_BUILTIN} SOURCES _contextvarsmodule.c)
     add_python_extension(_queue SOURCES _queuemodule.c)
     if(WIN32)
@@ -164,7 +164,7 @@ if(PY_VERSION VERSION_EQUAL "3.9")
 endif()
 
 if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
-    add_python_extension(_typing ${WIN32_BUILTIN} SOURCES _typingmodule.c)
+    add_python_extension(_typing ${WIN32_BUILTIN} ${PY3_ALWAYS_BUILTIN} SOURCES _typingmodule.c)
 endif()
 
 # UNIX-only extensions
@@ -193,13 +193,13 @@ if(PY_VERSION VERSION_LESS "3.13")
 endif()
 
 add_python_extension(posix REQUIRES UNIX ALWAYS_BUILTIN SOURCES posixmodule.c DEFINITIONS Py_BUILD_CORE)
-add_python_extension(pwd REQUIRES UNIX BUILTIN SOURCES pwdmodule.c) # this is needed to find out the user's home dir if $HOME is not set
+add_python_extension(pwd REQUIRES UNIX ALWAYS_BUILTIN SOURCES pwdmodule.c) # this is needed to find out the user's home dir if $HOME is not set
 add_python_extension(resource REQUIRES UNIX SOURCES resource.c)
 add_python_extension(spwd REQUIRES UNIX HAVE_GETSPNAM HAVE_GETSPENT SOURCES spwdmodule.c)
 add_python_extension(syslog REQUIRES UNIX SOURCES syslogmodule.c)
 add_python_extension(termios REQUIRES UNIX SOURCES termios.c)
 
-add_python_extension(errno BUILTIN UNIX SOURCES errnomodule.c)
+add_python_extension(errno ALWAYS_BUILTIN UNIX SOURCES errnomodule.c)
 add_python_extension(_posixsubprocess REQUIRES IS_PY3 UNIX SOURCES _posixsubprocess.c)
 
 # MacOSX-only extensions
@@ -344,7 +344,7 @@ elseif(APPLE)
         REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
         SOURCES ${ctypes_COMMON_SOURCES}
                 _ctypes/malloc_closure.c
-        DEFINITIONS Py_BUILD_CORE_MODULE FFI_BUILDING USING_MALLOC_CLOSURE_DOT_C MACOSX
+        DEFINITIONS FFI_BUILDING USING_MALLOC_CLOSURE_DOT_C MACOSX
         INCLUDEDIRS ${LibFFI_INCLUDE_DIR}
         LIBRARIES ${LibFFI_LIBRARY}
     )
@@ -353,7 +353,7 @@ else()
         add_python_extension(_ctypes
             REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
             SOURCES ${ctypes_COMMON_SOURCES}
-            DEFINITIONS Py_BUILD_CORE_MODULE FFI_BUILDING HAVE_FFI_PREP_CIF_VAR HAVE_FFI_PREP_CLOSURE_LOC HAVE_FFI_CLOSURE_ALLOC
+            DEFINITIONS FFI_BUILDING HAVE_FFI_PREP_CIF_VAR HAVE_FFI_PREP_CLOSURE_LOC HAVE_FFI_CLOSURE_ALLOC
             INCLUDEDIRS ${LibFFI_INCLUDE_DIR}
             LIBRARIES ${LibFFI_LIBRARY} ${HAVE_LIBDL}
         )
@@ -361,7 +361,7 @@ else()
         add_python_extension(_ctypes
             REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
             SOURCES ${ctypes_COMMON_SOURCES}
-            DEFINITIONS Py_BUILD_CORE_MODULE FFI_BUILDING
+            DEFINITIONS FFI_BUILDING
             INCLUDEDIRS ${LibFFI_INCLUDE_DIR}
             LIBRARIES ${LibFFI_LIBRARY}
         )
@@ -631,13 +631,23 @@ add_python_extension(_curses
 )
 
 # _dbm
-add_python_extension(_dbm
-    REQUIRES NDBM_TAG GDBM_LIBRARY GDBM_COMPAT_LIBRARY
-    SOURCES _dbmmodule.c
-    DEFINITIONS HAVE_${NDBM_TAG}_H
-    LIBRARIES ${GDBM_LIBRARY} ${GDBM_COMPAT_LIBRARY}
-    INCLUDEDIRS ${${NDBM_TAG}_INCLUDE_PATH}
-)
+if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+    add_python_extension(_dbm
+        REQUIRES NDBM_TAG GDBM_LIBRARY GDBM_COMPAT_LIBRARY
+        SOURCES _dbmmodule.c
+        DEFINITIONS USE_${NDBM_TAG}
+        LIBRARIES ${GDBM_LIBRARY} ${GDBM_COMPAT_LIBRARY}
+        INCLUDEDIRS ${${NDBM_TAG}_INCLUDE_PATH}
+    )
+else()
+    add_python_extension(_dbm
+        REQUIRES NDBM_TAG GDBM_LIBRARY GDBM_COMPAT_LIBRARY
+        SOURCES _dbmmodule.c
+        DEFINITIONS HAVE_${NDBM_TAG}_H
+        LIBRARIES ${GDBM_LIBRARY} ${GDBM_COMPAT_LIBRARY}
+        INCLUDEDIRS ${${NDBM_TAG}_INCLUDE_PATH}
+    )
+endif()
 
 # _gdbm
 add_python_extension(_gdbm

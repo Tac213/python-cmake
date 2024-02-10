@@ -32,8 +32,9 @@ if(UNIX)
         PREFIX="${CMAKE_INSTALL_PREFIX}"
         EXEC_PREFIX="${CMAKE_INSTALL_PREFIX}"
         VERSION="${PY_VERSION_MAJOR}.${PY_VERSION_MINOR}"
-        VPATH="."
+        VPATH=""
         PYTHONPATH="${PYTHONPATH}"
+        PLATLIBDIR="lib"
     )
 elseif(WIN32)
     set(_win32_getpath_file ${SRC_DIR}/Modules/getpath.c)
@@ -426,11 +427,21 @@ if(UNIX OR MINGW)
         PROPERTY COMPILE_DEFINITIONS
         PLATFORM="${PY_PLATFORM}"
     )
-    set_property(
-        SOURCE ${SRC_DIR}/Python/sysmodule.c
-        PROPERTY COMPILE_DEFINITIONS
-        ABIFLAGS="${ABIFLAGS}"
-    )
+    if(APPLE)
+        set_property(
+            SOURCE ${SRC_DIR}/Python/sysmodule.c
+            PROPERTY COMPILE_DEFINITIONS
+            ABIFLAGS="${ABIFLAGS}"
+            _PYTHONFRAMEWORK="Python"
+        )
+    else()
+        set_property(
+            SOURCE ${SRC_DIR}/Python/sysmodule.c
+            PROPERTY COMPILE_DEFINITIONS
+            ABIFLAGS="${ABIFLAGS}"
+            _PYTHONFRAMEWORK=""
+        )
+    endif()
 endif()
 
 if(WIN32)
@@ -541,10 +552,17 @@ include_directories(${builtin_includedirs})
 # builtin modules.
 set(config_inits "")
 set(config_entries "")
+set(config_minimal_inits "")
+set(config_minimal_entries "")
 
 foreach(ext ${builtin_extensions})
     set(config_inits "${config_inits}extern PyObject* PyInit_${ext}(void);\n")
     set(config_entries "${config_entries}    {\"${ext}\", PyInit_${ext}},\n")
+endforeach()
+
+foreach(ext ${always_builtin_extensions})
+    set(config_minimal_inits "${config_minimal_inits}extern PyObject* PyInit_${ext}(void);\n")
+    set(config_minimal_entries "${config_minimal_entries}    {\"${ext}\", PyInit_${ext}},\n")
 endforeach()
 
 if(PY_VERSION VERSION_GREATER_EQUAL "3.7")
@@ -561,6 +579,11 @@ endif()
 configure_file(
     ${PROJECT_SOURCE_DIR}/cmake/config.c.in
     ${PROJECT_BINARY_DIR}/CMakeFiles/config.c
+)
+
+configure_file(
+    ${PROJECT_SOURCE_DIR}/cmake/config_minimal.c.in
+    ${PROJECT_BINARY_DIR}/CMakeFiles/config_minimal.c
 )
 
 # Collect libpython target libraries
@@ -632,6 +655,10 @@ else()
             PROPERTY COMPILE_DEFINITIONS
             Py_NO_ENABLE_SHARED
         )
+    else()
+        list(APPEND _freeze_module_c
+            ${PROJECT_BINARY_DIR}/CMakeFiles/config_minimal.c
+        )
     endif()
 endif()
 
@@ -659,12 +686,10 @@ if(WIN32 AND(PY_VERSION VERSION_LESS "3.12") AND BUILTIN_MSI)
     )
 endif()
 
-list(APPEND LIBPYTHON_OMIT_FROZEN_SOURCES ${builtin_extension_sources})
-
 # Freeze modules
 set(LIBPYTHON_FROZEN_SOURCES)
 
-if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+if(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND (NOT UNIX))
     list(APPEND LIBPYTHON_FROZEN_SOURCES
         ${SRC_DIR}/Python/frozen_modules/getpath.h # Modules/getpath.py
         ${SRC_DIR}/Python/frozen_modules/importlib._bootstrap.h
@@ -691,6 +716,39 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
         ${SRC_DIR}/Python/frozen_modules/__phello__.spam.h
         ${SRC_DIR}/Python/frozen_modules/frozen_only.h # Tools/freeze/flag.py
     )
+elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND UNIX)
+    set(_bootstrap_python_frozen_sources
+        ${SRC_DIR}/Python/frozen_modules/getpath.h # Modules/getpath.py
+        ${SRC_DIR}/Python/frozen_modules/importlib._bootstrap.h
+        ${SRC_DIR}/Python/frozen_modules/importlib._bootstrap_external.h
+        ${SRC_DIR}/Python/frozen_modules/zipimport.h
+    )
+    set(_bootstrap_python_output_sources
+        ${SRC_DIR}/Python/frozen_modules/abc.h
+        ${SRC_DIR}/Python/frozen_modules/codecs.h
+        ${SRC_DIR}/Python/frozen_modules/io.h
+        ${SRC_DIR}/Python/frozen_modules/_collections_abc.h
+        ${SRC_DIR}/Python/frozen_modules/_sitebuiltins.h
+        ${SRC_DIR}/Python/frozen_modules/genericpath.h
+        ${SRC_DIR}/Python/frozen_modules/ntpath.h
+        ${SRC_DIR}/Python/frozen_modules/posixpath.h
+        ${SRC_DIR}/Python/frozen_modules/os.h
+        ${SRC_DIR}/Python/frozen_modules/site.h
+        ${SRC_DIR}/Python/frozen_modules/stat.h
+        ${SRC_DIR}/Python/frozen_modules/importlib.util.h
+        ${SRC_DIR}/Python/frozen_modules/importlib.machinery.h
+        ${SRC_DIR}/Python/frozen_modules/runpy.h
+        ${SRC_DIR}/Python/frozen_modules/__hello__.h
+        ${SRC_DIR}/Python/frozen_modules/__phello__.h
+        ${SRC_DIR}/Python/frozen_modules/__phello__.ham.h
+        ${SRC_DIR}/Python/frozen_modules/__phello__.ham.eggs.h
+        ${SRC_DIR}/Python/frozen_modules/__phello__.spam.h
+        ${SRC_DIR}/Python/frozen_modules/frozen_only.h # Tools/freeze/flag.py
+    )
+    set(LIBPYTHON_FROZEN_SOURCES
+        ${_bootstrap_python_frozen_sources}
+        ${_bootstrap_python_output_sources}
+    )
 else()
     list(APPEND LIBPYTHON_FROZEN_SOURCES
         ${SRC_DIR}/Python/importlib_external.h
@@ -704,7 +762,7 @@ else()
     endif()
 endif()
 
-if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+if(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND (NOT UNIX))
     find_package(Python3 REQUIRED)
     set(_freeze_module_py ${SRC_DIR}/Programs/_freeze_module.py)
     set(_deepfreeze_py ${SRC_DIR}/Tools/scripts/deepfreeze.py)
@@ -807,6 +865,173 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
         COMMENT
         "Generating: ${SRC_DIR}/Python/deepfreeze/deepfreeze.c"
     )
+elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND UNIX)
+    set(_deepfreeze_args)
+    list(JOIN _bootstrap_python_frozen_sources ", " _bootstrap_python_frozen_source_paths)
+    add_custom_command(
+        OUTPUT ${_bootstrap_python_frozen_sources}
+        COMMAND
+        ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_freeze_module>
+        getpath
+        ${SRC_DIR}/Modules/getpath.py
+        ${SRC_DIR}/Python/frozen_modules/getpath.h
+        DEPENDS
+        _freeze_module
+        ${SRC_DIR}/Modules/getpath.py
+        COMMENT
+        "Generating: ${_bootstrap_python_frozen_source_paths}"
+    )
+    foreach(src ${_bootstrap_python_frozen_sources})
+        get_filename_component(module_name ${src} NAME_WLE)
+
+        if(${module_name} STREQUAL "getpath")
+            continue()
+        endif()
+
+        list(APPEND _deepfreeze_args
+            "${src}:${module_name}"
+        )
+
+        if(EXISTS ${src})
+            continue()
+        endif()
+
+        string(REPLACE "." ";" module_name_list ${module_name})
+        set(module_path ${SRC_DIR}/Lib)
+
+        foreach(module_name_component ${module_name_list})
+            set(module_path ${module_path}/${module_name_component})
+        endforeach()
+
+        if(IS_DIRECTORY ${module_path})
+            set(module_path ${module_path}/__init__.py)
+        else()
+            set(module_path ${module_path}.py)
+        endif()
+
+        if(NOT EXISTS ${module_path})
+            message(FATAL_ERROR "Python file '${module_path}' doesn't exists!!")
+        endif()
+
+        add_custom_command(
+            OUTPUT ${_bootstrap_python_frozen_sources}
+            COMMAND
+            ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_freeze_module>
+            ${module_name}
+            ${module_path}
+            ${src}
+            DEPENDS
+            _freeze_module
+            ${module_path}
+            APPEND
+        )
+    endforeach()
+
+    set(_bootstrap_python_sources
+        ${_bootstrap_python_frozen_sources}
+        ${SRC_DIR}/Programs/_bootstrap_python.c
+        ${SRC_DIR}/Modules/getpath.c
+        ${PROJECT_BINARY_DIR}/CMakeFiles/config_minimal.c
+    )
+    add_executable(_bootstrap_python
+        ${_bootstrap_python_sources}
+        ${LIBPYTHON_OMIT_FROZEN_SOURCES}
+        ${always_builtin_extension_sources}
+    )
+    target_link_libraries(_bootstrap_python ${FREEZE_MODULE_TARGET_LIBRARIES})
+    if(builtin_compile_definitions_without_py_limited_api)
+        target_compile_definitions(_bootstrap_python PUBLIC ${builtin_compile_definitions_without_py_limited_api})
+    endif()
+    target_include_directories(_bootstrap_python
+        PRIVATE ${SRC_DIR}
+    )
+
+    set(_freeze_module_py ${SRC_DIR}/Programs/_freeze_module.py)
+    set(_deepfreeze_py ${SRC_DIR}/Tools/scripts/deepfreeze.py)
+
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
+        set(_deepfreeze_py ${SRC_DIR}/Tools/build/deepfreeze.py)
+    endif()
+
+    list(JOIN _bootstrap_python_output_sources ", " _bootstrap_python_output_source_paths)
+    add_custom_command(
+        OUTPUT ${_bootstrap_python_output_sources}
+        COMMAND
+        ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_bootstrap_python>
+        ${_freeze_module_py}
+        frozen_only
+        ${SRC_DIR}/Tools/freeze/flag.py
+        ${SRC_DIR}/Python/frozen_modules/frozen_only.h
+        DEPENDS
+        _bootstrap_python
+        ${SRC_DIR}/Tools/freeze/flag.py
+        WORKING_DIRECTORY
+        ${SRC_DIR}
+        COMMENT
+        "Generating: ${_bootstrap_python_output_source_paths}"
+    )
+    foreach(src ${_bootstrap_python_output_sources})
+        get_filename_component(module_name ${src} NAME_WLE)
+
+        list(APPEND _deepfreeze_args
+            "${src}:${module_name}"
+        )
+
+        if(${module_name} STREQUAL "frozen_only")
+            continue()
+        endif()
+
+        if(EXISTS ${src})
+            continue()
+        endif()
+
+        string(REPLACE "." ";" module_name_list ${module_name})
+        set(module_path ${SRC_DIR}/Lib)
+
+        foreach(module_name_component ${module_name_list})
+            set(module_path ${module_path}/${module_name_component})
+        endforeach()
+
+        if(IS_DIRECTORY ${module_path})
+            set(module_path ${module_path}/__init__.py)
+        else()
+            set(module_path ${module_path}.py)
+        endif()
+
+        if(NOT EXISTS ${module_path})
+            message(FATAL_ERROR "Python file '${module_path}' doesn't exists!!")
+        endif()
+
+        add_custom_command(
+            OUTPUT ${_bootstrap_python_output_sources}
+            COMMAND
+            ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_bootstrap_python>
+            ${_freeze_module_py}
+            ${module_name}
+            ${module_path}
+            ${src}
+            DEPENDS
+            _bootstrap_python
+            ${module_path}
+            APPEND
+        )
+    endforeach()
+    add_custom_command(
+        OUTPUT ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+        COMMAND
+        ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_bootstrap_python>
+
+        # "py"
+        ${_deepfreeze_py}
+        ${_deepfreeze_args}
+        "-o"
+        ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+        DEPENDS
+        _bootstrap_python
+        ${_deepfreeze_py}
+        COMMENT
+        "Generating: ${SRC_DIR}/Python/deepfreeze/deepfreeze.c"
+    )
 else()
     add_custom_command(
         OUTPUT ${LIBPYTHON_FROZEN_SOURCES}
@@ -840,6 +1065,8 @@ else()
         )
     endif()
 endif()
+
+list(APPEND LIBPYTHON_OMIT_FROZEN_SOURCES ${builtin_extension_sources})
 
 # This is a convenience target allowing to regenerate
 # the frozen sources.
@@ -919,6 +1146,10 @@ function(add_libpython name type install component)
 
     # Export target
     set_property(GLOBAL APPEND PROPERTY PYTHON_TARGETS ${name})
+
+    if(UNIX AND builtin_compile_definitions_without_py_limited_api)
+        target_compile_definitions(${name} PUBLIC ${builtin_compile_definitions_without_py_limited_api})
+    endif()
 
     if(install)
         install(TARGETS ${name} EXPORT PythonTargets

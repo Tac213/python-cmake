@@ -1686,7 +1686,8 @@
 #endif
 /* Enable GNU extensions on systems that have them.  */
 #ifndef _GNU_SOURCE
-# undef _GNU_SOURCE
+// # undef _GNU_SOURCE
+#cmakedefine _GNU_SOURCE ${_GNU_SOURCE}
 #endif
 /* Enable threading extensions on Solaris.  */
 #ifndef _POSIX_PTHREAD_SEMANTICS
@@ -1792,7 +1793,7 @@
 #cmakedefine _POSIX_THREADS ${_POSIX_THREADS}
 
 /* framework name */
-#cmakedefine _PYTHONFRAMEWORK ${_PYTHONFRAMEWORK}
+#cmakedefine _PYTHONFRAMEWORK "@_PYTHONFRAMEWORK@"
 
 /* Define to force use of thread-safe errno, h_errno, and other functions */
 #cmakedefine _REENTRANT ${_REENTRANT}
