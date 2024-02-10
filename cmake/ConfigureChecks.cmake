@@ -1843,7 +1843,8 @@ int main(void){
     if(HAVE_GETHOSTBYNAME_R)
         # Checking gethostbyname_r with 6 args
         set(check_src ${PROJECT_BINARY_DIR}/CMakeFiles/have_gethostbyname_r_6_arg.c)
-        file(WRITE ${check_src} "int main() {
+        file(WRITE ${check_src} "#include <netdb.h>
+int main() {
     char *name;
     struct hostent *he, *res;
     char buffer[2048];
@@ -1866,7 +1867,8 @@ int main(void){
         else()
             # Checking gethostbyname_r with 5 args
             set(check_src ${PROJECT_BINARY_DIR}/CMakeFiles/have_gethostbyname_r_5_arg.c)
-            file(WRITE ${check_src} "int main() {
+            file(WRITE ${check_src} "#include <netdb.h>
+int main() {
     char *name;
     struct hostent *he;
     char buffer[2048];
@@ -1889,7 +1891,8 @@ int main(void){
             else()
                 # Checking gethostbyname_r with 5 args
                 set(check_src ${PROJECT_BINARY_DIR}/CMakeFiles/have_gethostbyname_r_3_arg.c)
-                file(WRITE ${check_src} "int main() {
+                file(WRITE ${check_src} "#include <netdb.h>
+int main() {
     char *name;
     struct hostent *he;
     struct hostent_data data;
@@ -2084,6 +2087,9 @@ int main(void){
         check_symbol_exists(rl_completion_matches "${CFG_HEADERS}" HAVE_RL_COMPLETION_MATCHES)
         check_symbol_exists(rl_pre_input_hook "${CFG_HEADERS}" HAVE_RL_PRE_INPUT_HOOK)
         check_symbol_exists(rl_resize_terminal "${CFG_HEADERS}" HAVE_RL_RESIZE_TERMINAL)
+        set(CMAKE_EXTRA_INCLUDE_FILES "stdio.h" "readline/readline.h")
+        check_type_size("rl_compdisp_func_t" HAVE_RL_COMPDISP_FUNC_T)
+        unset(CMAKE_EXTRA_INCLUDE_FILES)
 
         set(CFG_HEADERS ${CFG_HEADERS_SAVE})
         cmake_pop_check_state()

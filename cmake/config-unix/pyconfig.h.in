@@ -968,6 +968,9 @@
 /* Define if you can turn off readline's signal handling. */
 #cmakedefine HAVE_RL_CATCH_SIGNAL ${HAVE_RL_CATCH_SIGNAL}
 
+/* Define if readline supports rl_compdisp_func_t */
+#cmakedefine HAVE_RL_COMPDISP_FUNC_T ${HAVE_RL_COMPDISP_FUNC_T}
+
 /* Define if you have readline 2.2 */
 #cmakedefine HAVE_RL_COMPLETION_APPEND_CHARACTER ${HAVE_RL_COMPLETION_APPEND_CHARACTER}
 
