@@ -7,7 +7,7 @@ Build python as a library that can be embeded to another application, using cmak
 Mac OS:
 
 ```bash
-brew install openssl xz zlib libffi
+brew install openssl xz zlib libffi tcl-tk
 ```
 
 Arch Linux:

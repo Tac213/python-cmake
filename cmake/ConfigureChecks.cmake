@@ -88,10 +88,7 @@ else()
     find_library(LibFFI_LIBRARY NAMES ffi libffi)
 
     if(APPLE)
-        execute_process(COMMAND brew --prefix libffi OUTPUT_VARIABLE _libffi_prefix)
-        find_path(LibFFI_INCLUDE_DIR ffi.h
-            HINT _libffi_prefix
-        )
+        set(LibFFI_INCLUDE_DIR /Library/Developer/CommandLineTools/SDKs/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk/usr/include/ffi)
     endif()
 endif()
 
@@ -145,7 +142,19 @@ if(WIN32)
     set(TCL_LIBRARY ${_win32_tcltk_folder}/${_win32_arch_name}/bin/tcl${_win32_tcltk_major_version}${_win32_tcltk_minor_version}t.dll)
     set(TK_LIBRARY ${_win32_tcltk_folder}/${_win32_arch_name}/bin/tk${_win32_tcltk_major_version}${_win32_tcltk_minor_version}t.dll)
 else()
-    find_package(TCL) # https://cmake.org/cmake/help/latest/module/FindTCL.html
+    find_package(TCL 8.5.12) # https://cmake.org/cmake/help/latest/module/FindTCL.html
+    if(APPLE)
+        execute_process(COMMAND brew --prefix tcl-tk OUTPUT_VARIABLE _tcltk_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+        execute_process(COMMAND brew info tcl-tk OUTPUT_VARIABLE _tcltk_info OUTPUT_STRIP_TRAILING_WHITESPACE)
+        string(REGEX MATCH "([0-9]+\.)+([0-9]+)" _tcltk_version ${_tcltk_info})
+        string(REGEX MATCHALL "[0-9]+" _tcltk_version_list ${_tcltk_version})
+        list(GET _tcltk_version_list 0 _tcltk_major_version)
+        list(GET _tcltk_version_list 1 _tcltk_minor_version)
+        set(TCL_INCLUDE_PATH ${_tcltk_prefix}/include/tcl-tk)
+        set(TK_INCLUDE_PATH ${_tcltk_prefix}/include/tcl-tk)
+        set(TCL_LIBRARY ${_tcltk_prefix}/lib/libtcl${_tcltk_major_version}.${_tcltk_minor_version}.dylib)
+        set(TK_LIBRARY ${_tcltk_prefix}/lib/libtk${_tcltk_major_version}.${_tcltk_minor_version}.dylib)
+    endif()
 endif()
 
 message(STATUS "TCL_LIBRARY=${TCL_LIBRARY}")

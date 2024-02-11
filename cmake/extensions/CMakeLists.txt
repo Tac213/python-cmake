@@ -420,11 +420,11 @@ endif()
 
 set(libmpdec_config )
 set(_decimal_compile_flags )
-if(APPLE)
-    # Universal here means: build with the same options Python
-    # was built with.
-    set(libmpdec_config universal)
-elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
+# if(APPLE)
+#     # Universal here means: build with the same options Python
+#     # was built with.
+#     set(libmpdec_config universal)
+if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
     if(HAVE_GCC_ASM_FOR_X64)
         set(libmpdec_config x64)
     elseif(HAVE_GCC_UINT128_T)
@@ -619,6 +619,10 @@ endif()
 # _curses
 set(curses_common_REQUIRES CURSES_LIBRARIES)
 set(curses_common_LIBRARIES ${CURSES_LIBRARIES})
+set(curses_DEFINITIONS)
+if(APPLE)
+    set(curses_DEFINITIONS HAVE_TERM_H)
+endif()
 add_python_extension(_curses_panel
     REQUIRES ${curses_common_REQUIRES} PANEL_LIBRARIES "HAVE_PANEL_H OR HAVE_NCURSES_PANEL_H"
     SOURCES _curses_panel.c
@@ -628,6 +632,7 @@ add_python_extension(_curses
     REQUIRES ${curses_common_REQUIRES}
     SOURCES _cursesmodule.c
     LIBRARIES ${curses_common_LIBRARIES}
+    DEFINITIONS ${curses_DEFINITIONS}
 )
 
 # _dbm

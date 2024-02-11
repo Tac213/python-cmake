@@ -433,6 +433,7 @@ if(UNIX OR MINGW)
             PROPERTY COMPILE_DEFINITIONS
             ABIFLAGS="${ABIFLAGS}"
             _PYTHONFRAMEWORK="Python"
+            MULTIARCH="darwin"
         )
     else()
         set_property(
@@ -1262,12 +1263,14 @@ function(add_libpython3 libpython_name)
     # set_target_properties(${targetname} PROPERTIES
     # POSITION_INDEPENDENT_CODE ON
     # )
-    install(TARGETS ${targetname} EXPORT PythonTargets
-        ARCHIVE DESTINATION ${LIBPYTHON_ARCHIVEDIR}
-        LIBRARY DESTINATION ${LIBPYTHON_LIBDIR}
-        RUNTIME DESTINATION ${LIBPYTHON_LIBDIR}
-        COMPONENT Runtime
-    )
+    if(TARGET ${targetname})
+        install(TARGETS ${targetname} EXPORT PythonTargets
+            ARCHIVE DESTINATION ${LIBPYTHON_ARCHIVEDIR}
+            LIBRARY DESTINATION ${LIBPYTHON_LIBDIR}
+            RUNTIME DESTINATION ${LIBPYTHON_LIBDIR}
+            COMPONENT Runtime
+        )
+    endif()
 endfunction()
 
 if(BUILD_LIBPYTHON_SHARED)
