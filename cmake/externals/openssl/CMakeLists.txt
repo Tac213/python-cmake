@@ -1,9 +1,9 @@
 # Add imported libraries of openssl on Win32
 
 set(openssl_include ${_win32_openssl_folder}/${_win32_arch_name}/include)
-set(libcrypto_dll ${_win32_openssl_folder}/${_win32_arch_name}/libcrypto-3.dll)
+file(GLOB libcrypto_dll ${_win32_openssl_folder}/${_win32_arch_name}/libcrypto-*.dll)
 set(libcrypto_lib ${_win32_openssl_folder}/${_win32_arch_name}/libcrypto.lib)
-set(libssl_dll ${_win32_openssl_folder}/${_win32_arch_name}/libssl-3.dll)
+file(GLOB libssl_dll ${_win32_openssl_folder}/${_win32_arch_name}/libssl-*.dll)
 set(libssl_lib ${_win32_openssl_folder}/${_win32_arch_name}/libssl.lib)
 
 add_library( OpenSSL::Crypto SHARED IMPORTED GLOBAL)

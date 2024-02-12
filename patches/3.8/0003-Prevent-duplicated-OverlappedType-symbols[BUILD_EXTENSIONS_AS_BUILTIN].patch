@@ -1,0 +1,62 @@
+From 7d3227c2c28ff5baea98fc74187ddac5e46ebcac Mon Sep 17 00:00:00 2001
+From: Tac Uchiha <cookiezhx@163.com>
+Date: Mon, 12 Feb 2024 20:28:20 +0800
+Subject: [PATCH] Prevent duplicated OverlappedType symbols with builtin
+ extensions on Windows
+
+---
+ Modules/_winapi.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/Modules/_winapi.c b/Modules/_winapi.c
+index 647075c..d4951ac 100644
+--- a/Modules/_winapi.c
++++ b/Modules/_winapi.c
+@@ -145,7 +145,7 @@ overlapped_dealloc(OverlappedObject *self)
+ 
+ /*[clinic input]
+ module _winapi
+-class _winapi.Overlapped "OverlappedObject *" "&OverlappedType"
++class _winapi.Overlapped "OverlappedObject *" "&WinapiOverlappedType"
+ [clinic start generated code]*/
+ /*[clinic end generated code: output=da39a3ee5e6b4b0d input=c13d3f5fd1dabb84]*/
+ 
+@@ -304,7 +304,7 @@ static PyMemberDef overlapped_members[] = {
+     {NULL}
+ };
+ 
+-PyTypeObject OverlappedType = {
++PyTypeObject WinapiOverlappedType = {
+     PyVarObject_HEAD_INIT(NULL, 0)
+     /* tp_name           */ "_winapi.Overlapped",
+     /* tp_basicsize      */ sizeof(OverlappedObject),
+@@ -350,7 +350,7 @@ new_overlapped(HANDLE handle)
+ {
+     OverlappedObject *self;
+ 
+-    self = PyObject_New(OverlappedObject, &OverlappedType);
++    self = PyObject_New(OverlappedObject, &WinapiOverlappedType);
+     if (!self)
+         return NULL;
+     self->handle = handle;
+@@ -1934,7 +1934,7 @@ PyInit__winapi(void)
+     PyObject *d;
+     PyObject *m;
+ 
+-    if (PyType_Ready(&OverlappedType) < 0)
++    if (PyType_Ready(&WinapiOverlappedType) < 0)
+         return NULL;
+ 
+     m = PyModule_Create(&winapi_module);
+@@ -1942,7 +1942,7 @@ PyInit__winapi(void)
+         return NULL;
+     d = PyModule_GetDict(m);
+ 
+-    PyDict_SetItemString(d, "Overlapped", (PyObject *) &OverlappedType);
++    PyDict_SetItemString(d, "Overlapped", (PyObject *) &WinapiOverlappedType);
+ 
+     /* constants */
+     WINAPI_CONSTANT(F_DWORD, CREATE_NEW_CONSOLE);
+-- 
+2.43.0.windows.1
+

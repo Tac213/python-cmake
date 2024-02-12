@@ -4,7 +4,7 @@ Rename header files found in `Modules/_decimal/libmpdec` directory to avoid conf
 
 Conflict header: io.h
 
-If this patch is not apply, when the module `_decimal` is compiled as a builtin module on Windows, the follow error occurs:
+If this patch is not applied, when the module `_decimal` is compiled as a builtin module on Windows, the following error occurs:
 
 ```
 Modules\posixmodule.c(3649): error C2065: '_commit': undeclared identifier

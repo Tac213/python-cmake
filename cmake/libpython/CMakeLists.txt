@@ -96,9 +96,9 @@ elseif(WIN32)
             PROPERTY COMPILE_DEFINITIONS
             "PREFIX=\"NULL\""
             "EXEC_PREFIX=\"NULL\""
-            "VERSION=\"${PY_VERSION_MAJOR}.${PY_VERSION_MINOR}\""
+            "VERSION=${_wide_char_modifier}\"${PY_VERSION_MAJOR}.${PY_VERSION_MINOR}\""
             "VPATH=\".\\\\.\""
-            "PYTHONPATH=\"${PYTHONPATH}\""
+            "PYTHONPATH=${_wide_char_modifier}\"${PYTHONPATH}\""
             "PLATLIBDIR=\"DLLs\""
         )
     endif()
@@ -1116,7 +1116,6 @@ endif()
 
 if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
     list(APPEND LIBPYTHON_SOURCES
-        ${SRC_DIR}/Modules/getpath.c
         ${PROJECT_BINARY_DIR}/CMakeFiles/config.c
     )
 
@@ -1129,6 +1128,7 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
     if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
         list(APPEND LIBPYTHON_SOURCES
             ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+            ${SRC_DIR}/Modules/getpath.c
         )
     endif()
 endif()

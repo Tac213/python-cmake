@@ -145,7 +145,7 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.7")
     add_python_extension(_abc ALWAYS_BUILTIN SOURCES _abc.c)
     add_python_extension(_contextvars ${WIN32_BUILTIN} SOURCES _contextvarsmodule.c)
     add_python_extension(_queue SOURCES _queuemodule.c)
-    if(WIN32)
+    if(WIN32 AND (PY_VERSION VERSION_GREATER_EQUAL "3.9"))
         add_python_extension(_uuid SOURCES _uuidmodule.c)
     else()
         add_python_extension(_uuid REQUIRES UUID_LIBRARY "HAVE_UUID_H OR HAVE_UUID_UUID_H" SOURCES _uuidmodule.c LIBRARIES ${UUID_LIBRARY})
@@ -159,7 +159,7 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
     add_python_extension(_testinternalcapi SOURCES _testinternalcapi.c DEFINITIONS "PY3_DLLNAME=\"${PY3_DLLNAME}\"")
 endif()
 
-if(PY_VERSION VERSION_EQUAL "3.9")
+if((PY_VERSION VERSION_GREATER_EQUAL "3.9") AND (PY_VERSION VERSION_LESS "3.10"))
     add_python_extension(_peg_parser ALWAYS_BUILTIN SOURCES _peg_parser.c)
 endif()
 
@@ -331,11 +331,15 @@ set(ctypes_COMMON_SOURCES
     _ctypes/cfield.c
 )
 if(WIN32)
+    set(ctypes_DEFINITIONS USING_MALLOC_CLOSURE_DOT_C)
+    if(${PY_VERSION} VERSION_LESS "3.11")
+        list(APPEND ctypes_DEFINITIONS FFI_BUILDING)
+    endif()
     add_python_extension(_ctypes
         # REQUIRES LibFFI_INCLUDE_DIR LibFFI_LIBRARY
         SOURCES ${ctypes_COMMON_SOURCES}
                 _ctypes/malloc_closure.c
-        DEFINITIONS USING_MALLOC_CLOSURE_DOT_C
+        DEFINITIONS ${ctypes_DEFINITIONS}
         INCLUDEDIRS ${LibFFI_INCLUDE_DIR}
         LIBRARIES libffi
     )

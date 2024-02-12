@@ -1,6 +1,7 @@
 # Translation of PCbuild/liblzma.vcxproj
 
 set(lzma_source_dir ${_win32_xz_folder})
+string(REGEX MATCH "([0-9]+\.)+([0-9]+)" _win32_xz_version ${_win32_xz_folder_name})
 
 set(lzma_sources
     ${lzma_source_dir}/src/common/tuklib_cpucores.c
@@ -145,8 +146,17 @@ set(lzma_headers
     ${lzma_source_dir}/src/liblzma/simple/simple_decoder.h
     ${lzma_source_dir}/src/liblzma/simple/simple_encoder.h
     ${lzma_source_dir}/src/liblzma/simple/simple_private.h
-    ${lzma_source_dir}/windows/vs2019/config.h
 )
+
+if(${_win32_xz_version} VERSION_GREATER_EQUAL "5.2.5")
+    list(APPEND lzma_headers
+        ${lzma_source_dir}/windows/vs2019/config.h
+    )
+else()
+    list(APPEND lzma_headers
+        ${lzma_source_dir}/windows/config.h
+    )
+endif()
 
 add_library(liblzma STATIC
     ${lzma_sources}
@@ -158,7 +168,6 @@ target_include_directories(liblzma
     PUBLIC
         ${lzma_source_dir}/src/liblzma/api
     PRIVATE
-        ${lzma_source_dir}/windows/vs2019
         ${lzma_source_dir}/src/liblzma/common
         ${lzma_source_dir}/src/common
         ${lzma_source_dir}/src/liblzma/check
@@ -168,6 +177,18 @@ target_include_directories(liblzma
         ${lzma_source_dir}/src/liblzma/rangecoder
         ${lzma_source_dir}/src/liblzma/simple
 )
+
+if(${_win32_xz_version} VERSION_GREATER_EQUAL "5.2.5")
+    target_include_directories(liblzma
+        PRIVATE
+            ${lzma_source_dir}/windows/vs2019
+    )
+else()
+    target_include_directories(liblzma
+        PRIVATE
+            ${lzma_source_dir}/windows
+    )
+endif()
 
 target_compile_definitions(liblzma
     PUBLIC
