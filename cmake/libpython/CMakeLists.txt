@@ -7,7 +7,7 @@ set(MODULE_SOURCES # Equivalent to MODULE_OBJS in Makefile.pre
     ${SRC_DIR}/Modules/main.c
 )
 
-if(PY_VERSION VERSION_LESS "3.11")
+if(PY_VERSION VERSION_LESS "3.8")
     list(APPEND MODULE_SOURCES
         ${PROJECT_BINARY_DIR}/CMakeFiles/config.c
     )
@@ -116,7 +116,7 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
         ${SRC_DIR}/Parser/token.c
         ${SRC_DIR}/Parser/tokenizer.c
     )
-elseif(PY_VERSION VERSION_EQUAL "3.10")
+elseif(PY_VERSION VERSION_GREATER_EQUAL "3.10")
     set(PARSER_COMMON_SOURCES # Equivalent to POBJS in Makefile.pre
         ${SRC_DIR}/Parser/myreadline.c
         ${SRC_DIR}/Parser/parser.c
@@ -374,6 +374,13 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
         ${SRC_DIR}/Python/initconfig.c
         ${SRC_DIR}/Python/preconfig.c
     )
+    if((PY_VERSION VERSION_GREATER_EQUAL "3.9") AND (PY_VERSION VERSION_LESS "3.11"))
+        set_property(
+            SOURCE ${SRC_DIR}/Python/initconfig.c
+            PROPERTY COMPILE_DEFINITIONS
+            PLATLIBDIR="lib"
+        )
+    endif()
 endif()
 
 if(PY_VERSION VERSION_GREATER_EQUAL "3.10")
@@ -642,6 +649,9 @@ set(_freeze_module_c ${SRC_DIR}/Programs/_freeze_module.c)
 
 if(PY_VERSION VERSION_LESS "3.11")
     set(_freeze_module_c ${SRC_DIR}/Programs/_freeze_importlib.c)
+    list(APPEND _freeze_module_c
+        ${PROJECT_BINARY_DIR}/CMakeFiles/config_minimal.c
+    )
 else()
     list(APPEND _freeze_module_c
         ${SRC_DIR}/Modules/getpath_noop.c
@@ -1104,9 +1114,8 @@ if(UNIX OR(PY_VERSION VERSION_GREATER_EQUAL "3.11"))
     )
 endif()
 
-if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
     list(APPEND LIBPYTHON_SOURCES
-        ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
         ${SRC_DIR}/Modules/getpath.c
         ${PROJECT_BINARY_DIR}/CMakeFiles/config.c
     )
@@ -1114,6 +1123,12 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
     if(WIN32)
         list(APPEND LIBPYTHON_SOURCES
             ${SRC_DIR}/PC/dl_nt.c
+        )
+    endif()
+
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+        list(APPEND LIBPYTHON_SOURCES
+            ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
         )
     endif()
 endif()

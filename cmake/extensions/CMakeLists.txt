@@ -377,7 +377,7 @@ set(libmpdec_config_ansi32       CONFIG_32 PPRO) # XXX Is ANSI needed here ?
 set(libmpdec_config_ansi_legacy  CONFIG_32 ANSI LEGACY_COMPILER)
 set(libmpdec_config_universal    UNIVERSAL)
 
-if(SYSTEM_LIBMPDEC_FOUND)
+if(SYSTEM_LIBMPDEC_FOUND AND (${PY_VERSION} VERSION_GREATER_EQUAL "3.10"))
     set(_decimal_REQUIRES REQUIRES LIBMPDEC_LIBRARIES)
     set(_decimal_LIBRARIES LIBRARIES ${LIBMPDEC_LIBRARIES})
     set(_decimal_EXTRA_SOURCES )

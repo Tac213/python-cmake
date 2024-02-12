@@ -1,0 +1,31 @@
+From d5a74933d97cb5d09728acef28d5f9d4badacce9 Mon Sep 17 00:00:00 2001
+From: Tac Uchiha <cookiezhx@163.com>
+Date: Mon, 12 Feb 2024 15:20:44 +0800
+Subject: [PATCH] Prevent incorrect include of io.h found in libmpdec
+
+---
+ Modules/_decimal/libmpdec/io.c               | 2 +-
+ Modules/_decimal/libmpdec/{io.h => mpd_io.h} | 0
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ rename Modules/_decimal/libmpdec/{io.h => mpd_io.h} (100%)
+
+diff --git a/Modules/_decimal/libmpdec/io.c b/Modules/_decimal/libmpdec/io.c
+index f45e558..4cf9210 100644
+--- a/Modules/_decimal/libmpdec/io.c
++++ b/Modules/_decimal/libmpdec/io.c
+@@ -38,7 +38,7 @@
+ #include "bits.h"
+ #include "constants.h"
+ #include "typearith.h"
+-#include "io.h"
++#include "mpd_io.h"
+ 
+ 
+ /* This file contains functions for decimal <-> string conversions, including
+diff --git a/Modules/_decimal/libmpdec/io.h b/Modules/_decimal/libmpdec/mpd_io.h
+similarity index 100%
+rename from Modules/_decimal/libmpdec/io.h
+rename to Modules/_decimal/libmpdec/mpd_io.h
+-- 
+2.43.0.windows.1
+
