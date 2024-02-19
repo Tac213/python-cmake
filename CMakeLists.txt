@@ -220,6 +220,9 @@ endif()
 
 if(WIN32)
     enable_language(CXX)
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
+        set(CMAKE_CXX_STANDARD 20)  # required by _wmimodule.cpp
+    endif()
 
     if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
         enable_language(ASM_MASM)

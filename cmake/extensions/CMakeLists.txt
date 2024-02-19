@@ -240,6 +240,13 @@ add_python_extension(msvcrt REQUIRES MSVC BUILTIN SOURCES ${SRC_DIR}/PC/msvcrtmo
 add_python_extension(nt REQUIRES WIN32 ALWAYS_BUILTIN SOURCES posixmodule.c)
 
 add_python_extension(winreg REQUIRES WIN32 ALWAYS_BUILTIN SOURCES ${SRC_DIR}/PC/winreg.c)
+if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
+    add_python_extension(_wmi
+        REQUIRES WIN32
+        SOURCES ${SRC_DIR}/PC/_wmimodule.cpp
+        LIBRARIES wbemuuid.lib propsys.lib
+    )
+endif()
 
 # Python3: Windows-only extensions
 add_python_extension(_overlapped
