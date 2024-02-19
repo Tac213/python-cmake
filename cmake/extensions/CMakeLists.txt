@@ -239,6 +239,7 @@ endif()
 add_python_extension(msvcrt REQUIRES MSVC BUILTIN SOURCES ${SRC_DIR}/PC/msvcrtmodule.c)
 add_python_extension(nt REQUIRES WIN32 ALWAYS_BUILTIN SOURCES posixmodule.c)
 
+add_python_extension(winsound REQUIRES WIN32 SOURCES ${SRC_DIR}/PC/winsound.c LIBRARIES winmm.lib)
 add_python_extension(winreg REQUIRES WIN32 ALWAYS_BUILTIN SOURCES ${SRC_DIR}/PC/winreg.c)
 if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
     add_python_extension(_wmi
