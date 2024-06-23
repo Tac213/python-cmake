@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-set(PYTHON_VERSION "3.12.3" CACHE STRING "The version of Python to build.")
+set(PYTHON_VERSION "3.12.4" CACHE STRING "The version of Python to build.")
 
 string(REPLACE "." ";" VERSION_LIST ${PYTHON_VERSION})
 list(GET VERSION_LIST 0 PY_VERSION_MAJOR)
@@ -93,7 +93,7 @@ set(_download_3.8.19_md5 "5e3188ce73865fa4545d9e3e89bcd26c")
 set(_download_3.9.0_md5 "e19e75ec81dd04de27797bf3f9d918fd")
 set(_download_3.9.1_md5 "429ae95d24227f8fa1560684fad6fca7")
 set(_download_3.9.2_md5 "8cf053206beeca72c7ee531817dc24c7")
-set(_download_3.9.3_md5 "d9886aeb5d15e33f63f75cb10c8b9bb3")  # Python-3.9.3 has been recalled officially. See: https://www.python.org/downloads/release/python-393/
+set(_download_3.9.3_md5 "d9886aeb5d15e33f63f75cb10c8b9bb3") # Python-3.9.3 has been recalled officially. See: https://www.python.org/downloads/release/python-393/
 set(_download_3.9.4_md5 "cc8507b3799ed4d8baa7534cd8d5b35f")
 set(_download_3.9.5_md5 "364158b3113cf8ac8db7868ce40ebc7b")
 set(_download_3.9.6_md5 "798b9d3e866e1906f6e32203c4c560fa")
@@ -139,6 +139,7 @@ set(_download_3.12.0_md5 "d6eda3e1399cef5dfde7c4f319b0596c")
 set(_download_3.12.1_md5 "51c5c22dcbc698483734dff5c8028606")
 set(_download_3.12.2_md5 "4e64a004f8ad9af1a75607cfd0d5a8c8")
 set(_download_3.12.3_md5 "3c5498a34d5226c9b746b1199f0bf2d9")
+set(_download_3.12.4_md5 "ead819dab6d165937138daa9e51ccb54")
 
 set(_extracted_dir "Python-${PY_VERSION}")
 
@@ -225,8 +226,9 @@ endif()
 
 if(WIN32)
     enable_language(CXX)
+
     if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
-        set(CMAKE_CXX_STANDARD 20)  # required by _wmimodule.cpp
+        set(CMAKE_CXX_STANDARD 20) # required by _wmimodule.cpp
     endif()
 
     if(${CMAKE_SIZEOF_VOID_P} EQUAL 8)
@@ -332,21 +334,26 @@ if(CMAKE_C_COMPILER_ID MATCHES GNU)
     append_if_absent(CMAKE_C_FLAGS "-fno-strict-aliasing")
     append_if_absent(CMAKE_C_FLAGS "-fwrapv")
     append_if_absent(CMAKE_C_FLAGS "-g")
+
     if(PY_VERSION VERSION_GREATER_EQUAL "3.7")
         append_if_absent(CMAKE_C_FLAGS "-Werror=implicit-function-declaration")
     endif()
 elseif(CMAKE_C_COMPILER_ID MATCHES Clang)
     append_if_absent(CMAKE_C_FLAGS "-Wall")
     append_if_absent(CMAKE_C_FLAGS "-g")
+
     if(PY_VERSION VERSION_GREATER_EQUAL "3.7")
         append_if_absent(CMAKE_C_FLAGS "-Werror=implicit-function-declaration")
     endif()
+
     if(PY_VERSION VERSION_LESS "3.11")
         append_if_absent(CMAKE_C_FLAGS "-Wno-unused-but-set-variable")
     endif()
+
     if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
         append_if_absent(CMAKE_C_FLAGS "-std=c11")
     endif()
+
     if(${BUILD_EXTENSIONS_AS_BUILTIN})
         append_if_absent(CMAKE_C_FLAGS "-Wno-macro-redefined")
     endif()
