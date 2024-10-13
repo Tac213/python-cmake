@@ -310,6 +310,19 @@ message(STATUS "UUID_INCLUDE_DIR=${UUID_INCLUDE_DIR}")
 message(STATUS "UUID_LIBRARY=${UUID_LIBRARY}")
 
 if(WIN32)
+    set(ABIFLAGS)
+
+    if(PYTHON_VERSION VERSION_GREATER_EQUAL "3.13")
+        if(DISABLE_GIL)
+            set(ABIFLAGS "${ABIFLAGS}t")
+            set(Py_GIL_DISABLED 1)
+        endif()
+    endif()
+
+    if(Py_DEBUG)
+        set(ABIFLAGS "${ABIFLAGS}d")
+    endif()
+
     set(M_LIBRARIES)
     set(HAVE_LIBM 1)
 
@@ -340,6 +353,13 @@ else()
     # In Python 3.7 and older, --with-pymalloc added a 'm' flag.
     set(_msg "Checking ABIFLAGS")
     set(ABIFLAGS)
+
+    if(PYTHON_VERSION VERSION_GREATER_EQUAL "3.13")
+        if(DISABLE_GIL)
+            set(ABIFLAGS "${ABIFLAGS}t")
+            set(Py_GIL_DISABLED 1)
+        endif()
+    endif()
 
     if(Py_DEBUG)
         set(ABIFLAGS "${ABIFLAGS}d")
@@ -2904,7 +2924,7 @@ endif() # if(WIN32)
 set(PY_PLATFORM generic)
 
 if(CMAKE_SYSTEM MATCHES Linux)
-    if (PY_VERSION VERSION_LESS 3.3)
+    if(PY_VERSION VERSION_LESS 3.3)
         set(PY_PLATFORM linux2)
     else()
         set(PY_PLATFORM linux)

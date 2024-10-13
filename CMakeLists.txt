@@ -33,6 +33,10 @@ option(BUILD_LIBPYTHON_SHARED "Build libpython as a shared library" ON)
 option(BUILD_EXTENSIONS_AS_BUILTIN "Default all modules as builtin to libpython" ON)
 option(INSTALL_DEVELOPMENT "Install files required to develop C extensions" ON)
 
+if(PYTHON_VERSION VERSION_GREATER_EQUAL "3.13")
+    option(DISABLE_GIL "Enables experimental support for running Python without the global interpreter lock (GIL): free threading build." OFF)
+endif()
+
 # Append an item to a string if it does not already contain it.  Any additional
 # arguments are treated as extra "set" arguments
 macro(append_if_absent VARNAME VALUE)
@@ -312,7 +316,7 @@ elseif(WIN32)
     set(PYCONFIG_BUILD_DIR ${SRC_DIR}/PC) # In a windows build tree, 'pyconfig.h' is NOT required to
 
     if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
-        configure_file(${PYCONFIG_BUILD_DIR}/pyconfig.h.in ${PYCONFIG_BUILD_DIR}/pyconfig.h COPYONLY)
+        configure_file(cmake/config-win32/pyconfig.h.in ${PYCONFIG_BUILD_DIR}/pyconfig.h)
     endif()
 
     # live along side the python executable.

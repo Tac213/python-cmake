@@ -437,6 +437,7 @@ endif()
 
 if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
     list(APPEND PYTHON_COMMON_SOURCES
+        ${SRC_DIR}/Python/brc.c
         ${SRC_DIR}/Python/critical_section.c
         ${SRC_DIR}/Python/crossinterp.c
         ${SRC_DIR}/Python/gc.c
@@ -1280,7 +1281,7 @@ function(add_libpython3 libpython_name)
             # Build 'python3.dll'
             add_library(${targetname} SHARED ${SRC_DIR}/PC/python3dll.c ${SRC_DIR}/PC/python3.def)
             set_target_properties(${targetname} PROPERTIES
-                OUTPUT_NAME python3
+                OUTPUT_NAME python3${ABIFLAGS}
                 LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR}
                 RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR}
                 INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/${LIBPYTHON_LIBDIR}
@@ -1308,7 +1309,7 @@ function(add_libpython3 libpython_name)
             # Build 'python3.dll'
             add_library(${targetname} SHARED ${SRC_DIR}/PC/python3dll.c)
             set_target_properties(${targetname} PROPERTIES
-                OUTPUT_NAME python3
+                OUTPUT_NAME python3${ABIFLAGS}
                 LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR}
                 RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR}
                 INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/${LIBPYTHON_LIBDIR}
