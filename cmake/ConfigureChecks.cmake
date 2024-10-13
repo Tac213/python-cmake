@@ -2728,10 +2728,12 @@ int main() {
     # Check for stdatomic.h
     set(check_src ${PROJECT_BINARY_DIR}/CMakeFiles/have_stdatomic_h.c)
     file(WRITE ${check_src} "#include <stdatomic.h>
-atomic_int value = ATOMIC_VAR_INIT(1);
-_Atomic void *py_atomic_address = (void*) &value;
+atomic_int int_var;
+atomic_uintptr_t uintptr_var;
 int main() {
-    int loaded_value = atomic_load(&value);
+    atomic_store_explicit(&int_var, 5, memory_order_relaxed);
+    atomic_store_explicit(&uintptr_var, 0, memory_order_relaxed);
+    int loaded_value = atomic_load_explicit(&int_var, memory_order_seq_cst);
     return 0;
 }
 ")
@@ -2741,6 +2743,17 @@ int main() {
         ${check_src}
         DIRECT
     )
+
+    if(${HAVE_STD_ATOMIC})
+        set(WITH_MIMALLOC 1)
+    else()
+        set(WITH_MIMALLOC 0)
+        if(PYTHON_VERSION VERSION_GREATER_EQUAL "3.13")
+            if(${DISABLE_GIL})
+                message(ERROR "--disable-gil requires mimalloc memory allocator (--with-mimalloc).")
+            endif()
+        endif()
+    endif()
 
     # Has builtin atomics
     set(check_src ${PROJECT_BINARY_DIR}/CMakeFiles/have_builtin_atomic.c)

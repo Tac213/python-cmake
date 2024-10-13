@@ -1766,6 +1766,9 @@
 /* Define to 1 if libintl is needed for locale functions. */
 #cmakedefine WITH_LIBINTL ${WITH_LIBINTL}
 
+/* Define if you want to compile in mimalloc memory allocator. */
+#cmakedefine WITH_MIMALLOC ${WITH_MIMALLOC}
+
 /* Define if you want to produce an OpenStep/Rhapsody framework (shared
    library plus accessory files). */
 #cmakedefine WITH_NEXT_FRAMEWORK ${WITH_NEXT_FRAMEWORK}
