@@ -2423,6 +2423,37 @@ int main () { return append_history (); }
     )
     cmake_pop_check_state()
 
+    # check if rl_startup_hook takes arguments...
+    set(check_src ${PROJECT_BINARY_DIR}/CMakeFiles/ac_cv_readline_rl_startup_hook_takes_args.c)
+    file(WRITE ${check_src} "#include <stdio.h> /* Must be first for Gnu Readline */
+#ifdef WITH_EDITLINE
+# include <editline/readline.h>
+#else
+# include <readline/readline.h>
+# include <readline/history.h>
+#endif
+
+int test_hook_func(const char *text, int state)
+{
+    return 0;
+}
+int
+main (void)
+{
+    rl_startup_hook = test_hook_func;
+    return 0;
+}
+")
+    cmake_push_check_state()
+    list(APPEND CMAKE_REQUIRED_LIBRARIES readline)
+    python_platform_test(
+        Py_RL_STARTUP_HOOK_TAKES_ARGS
+        "checking if rl_startup_hook takes arguments... "
+        ${check_src}
+        DIRECT
+    )
+    cmake_pop_check_state()
+
     check_c_source_runs("#include <unistd.h>\n int main() {
     int val1 = nice(1);
     if (val1 != -1 && val1 == nice(2)) exit(0);
