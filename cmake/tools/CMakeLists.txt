@@ -1,6 +1,6 @@
 set(files)
 
-if(PY_VERSION VERSION_GREATER_EQUAL "3.6")
+if(PY_VERSION VERSION_GREATER_EQUAL "3.6" AND PYTHON_VERSION VERSION_LESS "3.13")
     list(APPEND files
         Tools/scripts/run_tests.py
     )
@@ -11,4 +11,3 @@ foreach(file IN LISTS files)
     file(COPY ${SRC_DIR}/${file} DESTINATION ${PROJECT_BINARY_DIR}/${LIBDIR}/${path})
     install(FILES ${SRC_DIR}/${file} DESTINATION ${LIBDIR}/${path})
 endforeach()
-

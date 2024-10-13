@@ -104,7 +104,26 @@ elseif(WIN32)
     endif()
 endif()
 
-if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
+if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+    set(PARSER_COMMON_SOURCES
+        ${SRC_DIR}/Parser/lexer/state.c
+        ${SRC_DIR}/Parser/lexer/lexer.c
+        ${SRC_DIR}/Parser/lexer/buffer.c
+        ${SRC_DIR}/Parser/tokenizer/string_tokenizer.c
+        ${SRC_DIR}/Parser/tokenizer/file_tokenizer.c
+        ${SRC_DIR}/Parser/tokenizer/utf8_tokenizer.c
+        ${SRC_DIR}/Parser/tokenizer/readline_tokenizer.c
+        ${SRC_DIR}/Parser/tokenizer/helpers.c
+        ${SRC_DIR}/Parser/action_helpers.c
+        ${SRC_DIR}/Parser/myreadline.c
+        ${SRC_DIR}/Parser/parser.c
+        ${SRC_DIR}/Parser/peg_api.c
+        ${SRC_DIR}/Parser/pegen_errors.c
+        ${SRC_DIR}/Parser/pegen.c
+        ${SRC_DIR}/Parser/string_parser.c
+        ${SRC_DIR}/Parser/token.c
+    )
+elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11")
     set(PARSER_COMMON_SOURCES
         ${SRC_DIR}/Parser/action_helpers.c
         ${SRC_DIR}/Parser/myreadline.c
@@ -227,9 +246,14 @@ set(OBJECT_COMMON_SOURCES # Equivalent to OBJECT_OBJS in Makefile.pre
 
 if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
     list(APPEND OBJECT_COMMON_SOURCES
-        ${SRC_DIR}/Objects/interpreteridobject.c
         ${SRC_DIR}/Objects/picklebufobject.c
     )
+
+    if(PYTHON_VERSION VERSION_LESS "3.13")
+        list(APPEND OBJECT_COMMON_SOURCES
+            ${SRC_DIR}/Objects/interpreteridobject.c
+        )
+    endif()
 endif()
 
 if(PY_VERSION VERSION_GREATER_EQUAL "3.9")
@@ -374,7 +398,8 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
         ${SRC_DIR}/Python/initconfig.c
         ${SRC_DIR}/Python/preconfig.c
     )
-    if((PY_VERSION VERSION_GREATER_EQUAL "3.9") AND (PY_VERSION VERSION_LESS "3.11"))
+
+    if((PY_VERSION VERSION_GREATER_EQUAL "3.9") AND(PY_VERSION VERSION_LESS "3.11"))
         set_property(
             SOURCE ${SRC_DIR}/Python/initconfig.c
             PROPERTY COMPILE_DEFINITIONS
@@ -410,6 +435,22 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
     )
 endif()
 
+if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+    list(APPEND PYTHON_COMMON_SOURCES
+        ${SRC_DIR}/Python/critical_section.c
+        ${SRC_DIR}/Python/crossinterp.c
+        ${SRC_DIR}/Python/gc.c
+        ${SRC_DIR}/Python/gc_free_threading.c
+        ${SRC_DIR}/Python/gc_gil.c
+        ${SRC_DIR}/Python/instruction_sequence.c
+        ${SRC_DIR}/Python/interpconfig.c
+        ${SRC_DIR}/Python/lock.c
+        ${SRC_DIR}/Python/object_stack.c
+        ${SRC_DIR}/Python/parking_lot.c
+        ${SRC_DIR}/Python/qsbr.c
+    )
+endif()
+
 if(UNIX)
     list(APPEND PYTHON_COMMON_SOURCES
         ${SRC_DIR}/Python/frozenmain.c
@@ -434,6 +475,7 @@ if(UNIX OR MINGW)
         PROPERTY COMPILE_DEFINITIONS
         PLATFORM="${PY_PLATFORM}"
     )
+
     if(APPLE)
         set_property(
             SOURCE ${SRC_DIR}/Python/sysmodule.c
@@ -700,7 +742,7 @@ endif()
 # Freeze modules
 set(LIBPYTHON_FROZEN_SOURCES)
 
-if(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND (NOT UNIX))
+if(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND(NOT UNIX))
     list(APPEND LIBPYTHON_FROZEN_SOURCES
         ${SRC_DIR}/Python/frozen_modules/getpath.h # Modules/getpath.py
         ${SRC_DIR}/Python/frozen_modules/importlib._bootstrap.h
@@ -773,7 +815,7 @@ else()
     endif()
 endif()
 
-if(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND (NOT UNIX))
+if(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND(NOT UNIX))
     find_package(Python3 REQUIRED)
     set(_freeze_module_py ${SRC_DIR}/Programs/_freeze_module.py)
     set(_deepfreeze_py ${SRC_DIR}/Tools/scripts/deepfreeze.py)
@@ -860,22 +902,25 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND (NOT UNIX))
         ${SRC_DIR}/Modules/getpath.py
         APPEND
     )
-    add_custom_command(
-        OUTPUT ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
-        COMMAND
-        ${Python3_EXECUTABLE}
 
-        # "py"
-        ${_deepfreeze_py}
-        ${_deepfreeze_args}
-        "-o"
-        ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
-        DEPENDS
-        _freeze_module
-        ${_deepfreeze_py}
-        COMMENT
-        "Generating: ${SRC_DIR}/Python/deepfreeze/deepfreeze.c"
-    )
+    if(PYTHON_VERSION VERSION_LESS "3.13")
+        add_custom_command(
+            OUTPUT ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+            COMMAND
+            ${Python3_EXECUTABLE}
+
+            # "py"
+            ${_deepfreeze_py}
+            ${_deepfreeze_args}
+            "-o"
+            ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+            DEPENDS
+            _freeze_module
+            ${_deepfreeze_py}
+            COMMENT
+            "Generating: ${SRC_DIR}/Python/deepfreeze/deepfreeze.c"
+        )
+    endif()
 elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND UNIX)
     set(_deepfreeze_args)
     list(JOIN _bootstrap_python_frozen_sources ", " _bootstrap_python_frozen_source_paths)
@@ -892,6 +937,7 @@ elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND UNIX)
         COMMENT
         "Generating: ${_bootstrap_python_frozen_source_paths}"
     )
+
     foreach(src ${_bootstrap_python_frozen_sources})
         get_filename_component(module_name ${src} NAME_WLE)
 
@@ -950,9 +996,11 @@ elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND UNIX)
         ${always_builtin_extension_sources}
     )
     target_link_libraries(_bootstrap_python ${FREEZE_MODULE_TARGET_LIBRARIES})
+
     if(builtin_compile_definitions_without_py_limited_api)
         target_compile_definitions(_bootstrap_python PUBLIC ${builtin_compile_definitions_without_py_limited_api})
     endif()
+
     target_include_directories(_bootstrap_python
         PRIVATE ${SRC_DIR}
     )
@@ -981,6 +1029,7 @@ elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND UNIX)
         COMMENT
         "Generating: ${_bootstrap_python_output_source_paths}"
     )
+
     foreach(src ${_bootstrap_python_output_sources})
         get_filename_component(module_name ${src} NAME_WLE)
 
@@ -1027,22 +1076,25 @@ elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND UNIX)
             APPEND
         )
     endforeach()
-    add_custom_command(
-        OUTPUT ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
-        COMMAND
-        ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_bootstrap_python>
 
-        # "py"
-        ${_deepfreeze_py}
-        ${_deepfreeze_args}
-        "-o"
-        ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
-        DEPENDS
-        _bootstrap_python
-        ${_deepfreeze_py}
-        COMMENT
-        "Generating: ${SRC_DIR}/Python/deepfreeze/deepfreeze.c"
-    )
+    if(PYTHON_VERSION VERSION_LESS "3.13")
+        add_custom_command(
+            OUTPUT ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+            COMMAND
+            ${CMAKE_CROSSCOMPILING_EMULATOR} $<TARGET_FILE:_bootstrap_python>
+
+            # "py"
+            ${_deepfreeze_py}
+            ${_deepfreeze_args}
+            "-o"
+            ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+            DEPENDS
+            _bootstrap_python
+            ${_deepfreeze_py}
+            COMMENT
+            "Generating: ${SRC_DIR}/Python/deepfreeze/deepfreeze.c"
+        )
+    endif()
 else()
     add_custom_command(
         OUTPUT ${LIBPYTHON_FROZEN_SOURCES}
@@ -1127,9 +1179,19 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.8")
 
     if(PY_VERSION VERSION_GREATER_EQUAL "3.11")
         list(APPEND LIBPYTHON_SOURCES
-            ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
             ${SRC_DIR}/Modules/getpath.c
         )
+
+        if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+            set_property(
+                SOURCE ${SRC_DIR}/Modules/getpath.c
+                PROPERTY INCLUDE_DIRECTORIES ${SRC_DIR}
+            )
+        else()
+            list(APPEND LIBPYTHON_SOURCES
+                ${SRC_DIR}/Python/deepfreeze/deepfreeze.c
+            )
+        endif()
     endif()
 endif()
 

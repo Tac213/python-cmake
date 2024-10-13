@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-set(PYTHON_VERSION "3.12.7" CACHE STRING "The version of Python to build.")
+set(PYTHON_VERSION "3.13.0" CACHE STRING "The version of Python to build.")
 
 string(REPLACE "." ";" VERSION_LIST ${PYTHON_VERSION})
 list(GET VERSION_LIST 0 PY_VERSION_MAJOR)
@@ -147,6 +147,7 @@ set(_download_3.12.4_md5 "ead819dab6d165937138daa9e51ccb54")
 set(_download_3.12.5_md5 "d23d56b51d36a9d51b2b13d30c849d00")
 set(_download_3.12.6_md5 "c2f1dd5c8807ee50b778684b7958ee28")
 set(_download_3.12.7_md5 "5d0c0e4c6a022a87165a9addcd869109")
+set(_download_3.13.0_md5 "726e5b829fcf352326874c1ae599abaa")
 
 set(_extracted_dir "Python-${PY_VERSION}")
 
@@ -310,6 +311,10 @@ if(UNIX)
 elseif(WIN32)
     set(PYCONFIG_BUILD_DIR ${SRC_DIR}/PC) # In a windows build tree, 'pyconfig.h' is NOT required to
 
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+        configure_file(${PYCONFIG_BUILD_DIR}/pyconfig.h.in ${PYCONFIG_BUILD_DIR}/pyconfig.h COPYONLY)
+    endif()
+
     # live along side the python executable.
     # See function '_init_posix()' and '_init_non_posix()'
     # in 'Lib/sysconfig.py'
@@ -325,6 +330,11 @@ endif()
 # Set include directories
 include_directories(${INCLUDE_BUILD_DIR})
 include_directories(${INCLUDE_BUILD_DIR}/internal)
+
+if(PYTHON_VERSION VERSION_GREATER_EQUAL "3.13")
+    include_directories(${INCLUDE_BUILD_DIR}/internal/mimalloc)
+endif()
+
 include_directories(${PYCONFIG_BUILD_DIR})
 include_directories(${SRC_DIR}/Python)
 
