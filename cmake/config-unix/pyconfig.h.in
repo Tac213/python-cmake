@@ -817,8 +817,26 @@
 /* Define to 1 if you have the `nanosleep' function. */
 #cmakedefine HAVE_NANOSLEEP ${HAVE_NANOSLEEP}
 
+/* Define to 1 if you have the <ncursesw/curses.h> header file. */
+#cmakedefine HAVE_NCURSESW_CURSES_H ${HAVE_NCURSESW_CURSES_H}
+
+/* Define to 1 if you have the <ncursesw/ncurses.h> header file. */
+#cmakedefine HAVE_NCURSESW_NCURSES_H ${HAVE_NCURSESW_NCURSES_H}
+
+/* Define to 1 if you have the <ncursesw/panel.h> header file. */
+#cmakedefine HAVE_NCURSESW_PANEL_H ${HAVE_NCURSESW_PANEL_H}
+
+/* Define to 1 if you have the <ncurses/curses.h> header file. */
+#cmakedefine HAVE_NCURSES_CURSES_H ${HAVE_NCURSES_CURSES_H}
+
 /* Define to 1 if you have the <ncurses.h> header file. */
 #cmakedefine HAVE_NCURSES_H ${HAVE_NCURSES_H}
+
+/* Define to 1 if you have the <ncurses/ncurses.h> header file. */
+#cmakedefine HAVE_NCURSES_NCURSES_H ${HAVE_NCURSES_NCURSES_H}
+
+/* Define to 1 if you have the <ncurses/panel.h> header file. */
+#cmakedefine HAVE_NCURSES_PANEL_H ${HAVE_NCURSES_PANEL_H}
 
 /* Define to 1 if you have the <ndbm.h> header file. */
 #cmakedefine HAVE_NDBM_H ${HAVE_NDBM_H}
@@ -856,6 +874,15 @@
 
 /* Define to 1 if you have the `openpty' function. */
 #cmakedefine HAVE_OPENPTY ${HAVE_OPENPTY}
+
+/* Define if you have the 'panel' library */
+#cmakedefine HAVE_PANEL ${HAVE_PANEL}
+
+/* Define if you have the 'panelw' library */
+#cmakedefine HAVE_PANELW ${HAVE_PANELW}
+
+/* Define to 1 if you have the <panel.h> header file. */
+#cmakedefine HAVE_PANEL_H ${HAVE_PANEL_H}
 
 /* Define to 1 if you have the `pathconf' function. */
 #cmakedefine HAVE_PATHCONF ${HAVE_PATHCONF}
