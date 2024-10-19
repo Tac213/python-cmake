@@ -271,6 +271,10 @@ set(PYTHONHOME "${LIBDIR}")
 
 if(UNIX)
     set(PYTHONHOME "${PYTHONHOME}/${LIBPYTHON}")
+
+    if(DISABLE_GIL)
+        set(PYTHONHOME "${PYTHONHOME}t")
+    endif()
 endif()
 
 # Install tree directory
