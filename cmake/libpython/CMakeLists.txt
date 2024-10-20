@@ -435,6 +435,8 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.12")
     )
 endif()
 
+set(_JIT_STENCILS_H ${PYCONFIG_BUILD_DIR}/jit_stencils.h)
+
 if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
     list(APPEND PYTHON_COMMON_SOURCES
         ${SRC_DIR}/Python/brc.c
@@ -445,11 +447,26 @@ if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
         ${SRC_DIR}/Python/gc_gil.c
         ${SRC_DIR}/Python/instruction_sequence.c
         ${SRC_DIR}/Python/interpconfig.c
+        ${SRC_DIR}/Python/jit.c
         ${SRC_DIR}/Python/lock.c
         ${SRC_DIR}/Python/object_stack.c
+        ${SRC_DIR}/Python/optimizer.c
+        ${SRC_DIR}/Python/optimizer_analysis.c
+        ${SRC_DIR}/Python/optimizer_symbols.c
         ${SRC_DIR}/Python/parking_lot.c
         ${SRC_DIR}/Python/qsbr.c
     )
+
+    if(ENABLE_JIT)
+        list(APPEND PYTHON_COMMON_SOURCES ${_JIT_STENCILS_H})
+        add_custom_command(
+            OUTPUT ${_JIT_STENCILS_H}
+            COMMAND ${PYTHON_FOR_BUILD} ${SRC_DIR}/Tools/jit/build.py ${PEP11_TARGET}
+            DEPENDS ${PYTHON_FOR_BUILD} ${SRC_DIR}/Tools/jit/build.py ${PYCONFIG_BUILD_DIR}/pyconfig.h
+            WORKING_DIRECTORY ${PYCONFIG_BUILD_DIR}
+            COMMENT "Generating: ${_JIT_STENCILS_H}"
+        )
+    endif()
 endif()
 
 if(UNIX)
@@ -732,6 +749,19 @@ target_compile_definitions(_freeze_module
     Py_NO_ENABLE_SHARED
 )
 
+if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+    if(ENABLE_JIT)
+        target_compile_definitions(_freeze_module
+            PUBLIC
+            _Py_JIT
+        )
+        target_compile_definitions(_freeze_module
+            PUBLIC
+            _Py_TIER2=${TIER2_FLAGS}
+        )
+    endif()
+endif()
+
 if(WIN32 AND(PY_VERSION VERSION_LESS "3.12") AND BUILTIN_MSI)
     set_property(
         SOURCE ${SRC_DIR}/PC/_msi.c
@@ -1002,6 +1032,19 @@ elseif(PY_VERSION VERSION_GREATER_EQUAL "3.11" AND UNIX)
         target_compile_definitions(_bootstrap_python PUBLIC ${builtin_compile_definitions_without_py_limited_api})
     endif()
 
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+        if(ENABLE_JIT)
+            target_compile_definitions(_bootstrap_python
+                PUBLIC
+                _Py_JIT
+            )
+            target_compile_definitions(_bootstrap_python
+                PUBLIC
+                _Py_TIER2=${TIER2_FLAGS}
+            )
+        endif()
+    endif()
+
     target_include_directories(_bootstrap_python
         PRIVATE ${SRC_DIR}
     )
@@ -1230,6 +1273,19 @@ function(add_libpython name type install component)
         target_compile_definitions(${name} PUBLIC ${builtin_compile_definitions_without_py_limited_api})
     endif()
 
+    if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+        if(ENABLE_JIT)
+            target_compile_definitions(${name}
+                PUBLIC
+                _Py_JIT
+            )
+            target_compile_definitions(${name}
+                PUBLIC
+                _Py_TIER2=${TIER2_FLAGS}
+            )
+        endif()
+    endif()
+
     if(install)
         install(TARGETS ${name} EXPORT PythonTargets
             ARCHIVE DESTINATION ${LIBPYTHON_ARCHIVEDIR}
@@ -1316,6 +1372,19 @@ function(add_libpython3 libpython_name)
             )
             add_dependencies(${targetname} ${libpython_name} generate_libpython3stub_lib)
 
+            if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+                if(ENABLE_JIT)
+                    target_compile_definitions(${targetname}
+                        PUBLIC
+                        _Py_JIT
+                    )
+                    target_compile_definitions(${targetname}
+                        PUBLIC
+                        _Py_TIER2=${TIER2_FLAGS}
+                    )
+                endif()
+            endif()
+
             target_link_libraries(${targetname} ${python3stub_lib})
         endif() # PY_VERSION < 3.10
     endif() # MSVC
@@ -1329,6 +1398,20 @@ function(add_libpython3 libpython_name)
             RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${LIBPYTHON_LIBDIR}
             INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/${LIBPYTHON_LIBDIR}
         )
+
+        if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+            if(ENABLE_JIT)
+                target_compile_definitions(${targetname}
+                    PUBLIC
+                    _Py_JIT
+                )
+                target_compile_definitions(${targetname}
+                    PUBLIC
+                    _Py_TIER2=${TIER2_FLAGS}
+                )
+            endif()
+        endif()
+
         target_link_libraries(${targetname} ${libpython_name})
     endif()
 

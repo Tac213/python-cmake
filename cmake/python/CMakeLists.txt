@@ -8,6 +8,20 @@ set_property(
     PROPERTY RUNTIME_OUTPUT_DIRECTORY ${BIN_BUILD_DIR}
 )
 target_compile_definitions(python PRIVATE Py_BUILD_CORE)
+
+if(PY_VERSION VERSION_GREATER_EQUAL "3.13")
+    if(ENABLE_JIT)
+        target_compile_definitions(python
+            PUBLIC
+            _Py_JIT
+        )
+        target_compile_definitions(python
+            PUBLIC
+            _Py_TIER2=${TIER2_FLAGS}
+        )
+    endif()
+endif()
+
 add_definitions(-DPy_BUILD_CORE)
 
 if(DISABLE_GIL)

@@ -35,6 +35,27 @@ option(INSTALL_DEVELOPMENT "Install files required to develop C extensions" ON)
 
 if(PYTHON_VERSION VERSION_GREATER_EQUAL "3.13")
     option(DISABLE_GIL "Enables experimental support for running Python without the global interpreter lock (GIL): free threading build." OFF)
+    option(ENABLE_JIT "Enables experimental support for just-in-time (JIT) compiler." ON)
+
+    if(NOT DEFINED JIT_OPTION)
+        if(ENABLE_JIT)
+            set(JIT_OPTION "yes")
+        else()
+            set(JIT_OPTION "no")
+        endif()
+    endif()
+
+    if(ENABLE_JIT)
+        if(JIT_OPTION STREQUAL "yes")
+            set(TIER2_FLAGS 1)
+        elseif(JIT_OPTION STREQUAL "yes-off")
+            set(TIER2_FLAGS 3)
+        elseif(JIT_OPTION STREQUAL "interpreter")
+            set(TIER2_FLAGS 4)
+        elseif(JIT_OPTION STREQUAL "interpreter-off")
+            set(TIER2_FLAGS 6)
+        endif()
+    endif()
 endif()
 
 # Append an item to a string if it does not already contain it.  Any additional

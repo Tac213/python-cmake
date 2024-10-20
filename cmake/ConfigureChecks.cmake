@@ -14,6 +14,18 @@ message(STATUS "The system name is ${CMAKE_SYSTEM_NAME}")
 message(STATUS "The system processor is ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "The system version is ${CMAKE_SYSTEM_VERSION}")
 
+find_program(PYTHON_FOR_BUILD python)
+
+if(WIN32)
+    set(PEP11_TARGET "${CMAKE_SYSTEM_PROCESSOR}-pc-windows-msvc")
+elseif(APPLE)
+    set(PEP11_TARGET "${CMAKE_SYSTEM_PROCESSOR}-apple-darwin")
+elseif(LINUX)
+    set(PEP11_TARGET "${CMAKE_SYSTEM_PROCESSOR}-pc-linux-gnu")
+endif()
+
+message(STATUS "The PEP 11 target is ${PEP11_TARGET}")
+
 if(WIN32)
     # download externals
     message(STATUS "Downloading externals...")
@@ -2748,6 +2760,7 @@ int main() {
         set(WITH_MIMALLOC 1)
     else()
         set(WITH_MIMALLOC 0)
+
         if(PYTHON_VERSION VERSION_GREATER_EQUAL "3.13")
             if(${DISABLE_GIL})
                 message(ERROR "--disable-gil requires mimalloc memory allocator (--with-mimalloc).")
