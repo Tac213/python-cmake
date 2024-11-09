@@ -14,7 +14,7 @@ message(STATUS "The system name is ${CMAKE_SYSTEM_NAME}")
 message(STATUS "The system processor is ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "The system version is ${CMAKE_SYSTEM_VERSION}")
 
-find_program(PYTHON_FOR_BUILD python)
+find_program(PYTHON_FOR_BUILD NAMES python python3)
 
 if(WIN32)
     set(PEP11_TARGET "${CMAKE_SYSTEM_PROCESSOR}-pc-windows-msvc")
@@ -100,7 +100,7 @@ else()
     find_library(LibFFI_LIBRARY NAMES ffi libffi)
 
     if(APPLE)
-        set(LibFFI_INCLUDE_DIR /Library/Developer/CommandLineTools/SDKs/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk/usr/include/ffi)
+        set(LibFFI_INCLUDE_DIR /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk/usr/include/ffi)
     endif()
 endif()
 
