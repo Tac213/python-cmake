@@ -35,7 +35,7 @@ option(INSTALL_DEVELOPMENT "Install files required to develop C extensions" ON)
 
 if(PYTHON_VERSION VERSION_GREATER_EQUAL "3.13")
     option(DISABLE_GIL "Enables experimental support for running Python without the global interpreter lock (GIL): free threading build." OFF)
-    option(ENABLE_JIT "Enables experimental support for just-in-time (JIT) compiler." ON)
+    option(ENABLE_JIT "Enables experimental support for just-in-time (JIT) compiler." OFF)
 
     if(NOT DEFINED JIT_OPTION)
         if(ENABLE_JIT)
